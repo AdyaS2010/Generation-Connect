@@ -4,8 +4,3 @@
     "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind4YnlhZm5vYWp1d2VhdGFqaGRtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA3ODE4MDksImV4cCI6MjA3NjM1NzgwOX0.XB5OlkVh7BwNCavmM1Porhm3eLQdDG9qF4RGxT9Cijg"
   }
 }
-
-{
-  "template": "bolt-expo"
-}
-
