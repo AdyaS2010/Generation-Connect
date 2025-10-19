@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, Alert, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
-import { validateEmail, validatePhone, validatePassword, getPasswordStrengthColor, formatPhoneNumber, PasswordRequirements } from '@/lib/validation';
-import { Eye, EyeOff } from 'lucide-react-native';
+import { validateEmail, validatePhone, validatePassword, getPasswordStrengthColor } from '@/lib/validation';
 
 export default function StudentSignupScreen() {
   const router = useRouter();
@@ -16,13 +15,6 @@ export default function StudentSignupScreen() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>();
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordRequirements, setPasswordRequirements] = useState<PasswordRequirements>({
-    minLength: false,
-    hasNumber: false,
-    hasLetter: false,
-  });
 
   const handleSignUp = async () => {
     const newErrors: Record<string, string> = {};
@@ -158,8 +150,7 @@ export default function StudentSignupScreen() {
               style={[styles.input, errors.phone && styles.inputError]}
               value={phone}
               onChangeText={(text) => {
-                const formatted = formatPhoneNumber(text);
-                setPhone(formatted);
+                setPhone(text);
                 if (errors.phone) {
                   setErrors({ ...errors, phone: '' });
                 }
@@ -167,7 +158,6 @@ export default function StudentSignupScreen() {
               placeholder="(123) 456-7890"
               keyboardType="phone-pad"
               editable={!loading}
-              maxLength={14}
             />
             {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
           </View>
@@ -197,60 +187,37 @@ export default function StudentSignupScreen() {
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Password *</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={[styles.passwordInput, errors.password && styles.inputError]}
-                value={password}
-                onChangeText={(text) => {
-                  setPassword(text);
-                  const validation = validatePassword(text);
-                  setPasswordStrength(validation.strength);
-                  setPasswordRequirements(validation.requirements);
-                  if (errors.password) {
-                    setErrors({ ...errors, password: '' });
-                  }
-                }}
-                placeholder="At least 8 characters"
-                secureTextEntry={!showPassword}
-                editable={!loading}
-              />
-              <Pressable
-                style={styles.eyeButton}
-                onPress={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <EyeOff size={20} color="#6c757d" />
-                ) : (
-                  <Eye size={20} color="#6c757d" />
-                )}
-              </Pressable>
-            </View>
+            <TextInput
+              style={[styles.input, errors.password && styles.inputError]}
+              value={password}
+              onChangeText={(text) => {
+                setPassword(text);
+                const validation = validatePassword(text);
+                setPasswordStrength(validation.strength);
+                if (errors.password) {
+                  setErrors({ ...errors, password: '' });
+                }
+              }}
+              placeholder="At least 8 characters"
+              secureTextEntry
+              editable={!loading}
+            />
             {password.length > 0 && (
-              <View style={styles.requirementsContainer}>
-                <View style={styles.requirementItem}>
-                  <View style={[styles.checkbox, passwordRequirements.minLength && styles.checkboxChecked]}>
-                    {passwordRequirements.minLength && <Text style={styles.checkmark}>✓</Text>}
-                  </View>
-                  <Text style={[styles.requirementText, passwordRequirements.minLength && styles.requirementMet]}>
-                    At least 8 characters
-                  </Text>
+              <View style={styles.strengthContainer}>
+                <View style={styles.strengthBar}>
+                  <View
+                    style={[
+                      styles.strengthFill,
+                      {
+                        width: passwordStrength === 'weak' ? '33%' : passwordStrength === 'medium' ? '66%' : '100%',
+                        backgroundColor: getPasswordStrengthColor(passwordStrength),
+                      },
+                    ]}
+                  />
                 </View>
-                <View style={styles.requirementItem}>
-                  <View style={[styles.checkbox, passwordRequirements.hasLetter && styles.checkboxChecked]}>
-                    {passwordRequirements.hasLetter && <Text style={styles.checkmark}>✓</Text>}
-                  </View>
-                  <Text style={[styles.requirementText, passwordRequirements.hasLetter && styles.requirementMet]}>
-                    Contains letters
-                  </Text>
-                </View>
-                <View style={styles.requirementItem}>
-                  <View style={[styles.checkbox, passwordRequirements.hasNumber && styles.checkboxChecked]}>
-                    {passwordRequirements.hasNumber && <Text style={styles.checkmark}>✓</Text>}
-                  </View>
-                  <Text style={[styles.requirementText, passwordRequirements.hasNumber && styles.requirementMet]}>
-                    Contains numbers
-                  </Text>
-                </View>
+                <Text style={[styles.strengthText, { color: getPasswordStrengthColor(passwordStrength) }]}>
+                  {passwordStrength === 'weak' ? 'Weak' : passwordStrength === 'medium' ? 'Medium' : 'Strong'}
+                </Text>
               </View>
             )}
             {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
@@ -258,31 +225,19 @@ export default function StudentSignupScreen() {
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Confirm Password *</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={[styles.passwordInput, errors.confirmPassword && styles.inputError]}
-                value={confirmPassword}
-                onChangeText={(text) => {
-                  setConfirmPassword(text);
-                  if (errors.confirmPassword) {
-                    setErrors({ ...errors, confirmPassword: '' });
-                  }
-                }}
-                placeholder="Re-enter your password"
-                secureTextEntry={!showConfirmPassword}
-                editable={!loading}
-              />
-              <Pressable
-                style={styles.eyeButton}
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-              >
-                {showConfirmPassword ? (
-                  <EyeOff size={20} color="#6c757d" />
-                ) : (
-                  <Eye size={20} color="#6c757d" />
-                )}
-              </Pressable>
-            </View>
+            <TextInput
+              style={[styles.input, errors.confirmPassword && styles.inputError]}
+              value={confirmPassword}
+              onChangeText={(text) => {
+                setConfirmPassword(text);
+                if (errors.confirmPassword) {
+                  setErrors({ ...errors, confirmPassword: '' });
+                }
+              }}
+              placeholder="Re-enter your password"
+              secureTextEntry
+              editable={!loading}
+            />
             {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
           </View>
 
@@ -408,64 +363,6 @@ const styles = StyleSheet.create({
   },
   strengthText: {
     fontSize: 12,
-    fontWeight: '600',
-  },
-  passwordContainer: {
-    position: 'relative',
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  passwordInput: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    padding: 16,
-    paddingRight: 48,
-    borderRadius: 12,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#dee2e6',
-  },
-  eyeButton: {
-    position: 'absolute',
-    right: 12,
-    padding: 8,
-  },
-  requirementsContainer: {
-    marginTop: 12,
-    gap: 8,
-    backgroundColor: '#f8f9fa',
-    padding: 12,
-    borderRadius: 8,
-  },
-  requirementItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: '#dee2e6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxChecked: {
-    backgroundColor: '#10b981',
-    borderColor: '#10b981',
-  },
-  checkmark: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  requirementText: {
-    fontSize: 14,
-    color: '#6c757d',
-  },
-  requirementMet: {
-    color: '#10b981',
     fontWeight: '600',
   },
 });
