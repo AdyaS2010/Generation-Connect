@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet, Alert, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
+import { validateEmail, validatePhone, validatePassword, getPasswordStrengthColor } from '@/lib/validation';
 
 export default function StudentSignupScreen() {
   const router = useRouter();
@@ -12,23 +13,46 @@ export default function StudentSignupScreen() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>();
 
-  // main signup handler - creates auth user, profile, and student profile
   const handleSignUp = async () => {
-    if (!fullName || !email || !schoolName || !password) {
-      Alert.alert('Error', 'Please fill in all required fields');
-      return;
+    const newErrors: Record<string, string> = {};
+
+    if (!fullName.trim()) {
+      newErrors.fullName = 'Full name is required';
+    }
+
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      newErrors.email = emailValidation.error!;
+    }
+
+    const phoneValidation = validatePhone(phone);
+    if (!phoneValidation.isValid) {
+      newErrors.phone = phoneValidation.error!;
+    }
+
+    if (!schoolName.trim()) {
+      newErrors.schoolName = 'School name is required';
+    }
+
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      newErrors.password = passwordValidation.error!;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      Alert.alert('Validation Error', 'Please fix the errors in the form');
       return;
     }
 
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
-      return;
-    }
+    setErrors({});
 
     setLoading(true);
 
@@ -68,8 +92,6 @@ export default function StudentSignupScreen() {
         if (studentProfileError) throw studentProfileError;
 
         setLoading(false);
-        // redirecting straight to document upload after signup
-        window.alert('Account created! Please upload your verification documents.');
         router.replace('/auth/upload-documents');
       } catch (error: any) {
         setLoading(false);
@@ -89,48 +111,72 @@ export default function StudentSignupScreen() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Full Name *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errors.fullName && styles.inputError]}
               value={fullName}
-              onChangeText={setFullName}
+              onChangeText={(text) => {
+                setFullName(text);
+                if (errors.fullName) {
+                  setErrors({ ...errors, fullName: '' });
+                }
+              }}
               placeholder="Jane Smith"
               editable={!loading}
             />
+            {errors.fullName && <Text style={styles.errorText}>{errors.fullName}</Text>}
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errors.email && styles.inputError]}
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text);
+                if (errors.email) {
+                  setErrors({ ...errors, email: '' });
+                }
+              }}
               placeholder="your@email.com"
               autoCapitalize="none"
               keyboardType="email-address"
               editable={!loading}
             />
+            {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Phone (optional)</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errors.phone && styles.inputError]}
               value={phone}
-              onChangeText={setPhone}
+              onChangeText={(text) => {
+                setPhone(text);
+                if (errors.phone) {
+                  setErrors({ ...errors, phone: '' });
+                }
+              }}
               placeholder="(123) 456-7890"
               keyboardType="phone-pad"
               editable={!loading}
             />
+            {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>School Name *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errors.schoolName && styles.inputError]}
               value={schoolName}
-              onChangeText={setSchoolName}
+              onChangeText={(text) => {
+                setSchoolName(text);
+                if (errors.schoolName) {
+                  setErrors({ ...errors, schoolName: '' });
+                }
+              }}
               placeholder="Lincoln High School"
               editable={!loading}
             />
+            {errors.schoolName && <Text style={styles.errorText}>{errors.schoolName}</Text>}
           </View>
 
           <View style={styles.note}>
@@ -142,25 +188,57 @@ export default function StudentSignupScreen() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Password *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errors.password && styles.inputError]}
               value={password}
-              onChangeText={setPassword}
-              placeholder="At least 6 characters"
+              onChangeText={(text) => {
+                setPassword(text);
+                const validation = validatePassword(text);
+                setPasswordStrength(validation.strength);
+                if (errors.password) {
+                  setErrors({ ...errors, password: '' });
+                }
+              }}
+              placeholder="At least 8 characters"
               secureTextEntry
               editable={!loading}
             />
+            {password.length > 0 && (
+              <View style={styles.strengthContainer}>
+                <View style={styles.strengthBar}>
+                  <View
+                    style={[
+                      styles.strengthFill,
+                      {
+                        width: passwordStrength === 'weak' ? '33%' : passwordStrength === 'medium' ? '66%' : '100%',
+                        backgroundColor: getPasswordStrengthColor(passwordStrength),
+                      },
+                    ]}
+                  />
+                </View>
+                <Text style={[styles.strengthText, { color: getPasswordStrengthColor(passwordStrength) }]}>
+                  {passwordStrength === 'weak' ? 'Weak' : passwordStrength === 'medium' ? 'Medium' : 'Strong'}
+                </Text>
+              </View>
+            )}
+            {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Confirm Password *</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, errors.confirmPassword && styles.inputError]}
               value={confirmPassword}
-              onChangeText={setConfirmPassword}
+              onChangeText={(text) => {
+                setConfirmPassword(text);
+                if (errors.confirmPassword) {
+                  setErrors({ ...errors, confirmPassword: '' });
+                }
+              }}
               placeholder="Re-enter your password"
               secureTextEntry
               editable={!loading}
             />
+            {errors.confirmPassword && <Text style={styles.errorText}>{errors.confirmPassword}</Text>}
           </View>
 
           <Pressable
@@ -259,5 +337,32 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     marginTop: 8,
+  },
+  inputError: {
+    borderColor: '#dc2626',
+    borderWidth: 2,
+  },
+  errorText: {
+    color: '#dc2626',
+    fontSize: 14,
+    marginTop: 4,
+  },
+  strengthContainer: {
+    marginTop: 8,
+    gap: 4,
+  },
+  strengthBar: {
+    height: 4,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  strengthFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  strengthText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
