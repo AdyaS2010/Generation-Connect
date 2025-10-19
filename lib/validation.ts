@@ -13,78 +13,61 @@ export const validateEmail = (email: string): { isValid: boolean; error?: string
 };
 
 export const validatePhone = (phone: string): { isValid: boolean; error?: string } => {
-  if (!phone || !phone.trim()) {
+  if (!phone) {
     return { isValid: true };
   }
 
-  const digitsOnly = phone.replace(/\D/g, '');
+  const phoneRegex = /^[\d\s\-\(\)]+$/;
+  const digitsOnly = phone.replace(/[\s\-\(\)]/g, '');
 
-  if (digitsOnly.length === 10) {
-    return { isValid: true };
+  if (!phoneRegex.test(phone)) {
+    return { isValid: false, error: 'Phone number can only contain digits, spaces, hyphens, and parentheses' };
   }
 
-  if (digitsOnly.length === 11 && digitsOnly.startsWith('1')) {
-    return { isValid: true };
+  if (digitsOnly.length < 10 || digitsOnly.length > 15) {
+    return { isValid: false, error: 'Phone number must be between 10-15 digits' };
   }
 
-  return { isValid: false, error: 'Please enter a valid 10-digit phone number' };
-};
-
-export interface PasswordRequirements {
-  minLength: boolean;
-  hasNumber: boolean;
-  hasLetter: boolean;
-}
-
-export const checkPasswordRequirements = (password: string): PasswordRequirements => {
-  return {
-    minLength: password.length >= 8,
-    hasNumber: /\d/.test(password),
-    hasLetter: /[a-zA-Z]/.test(password),
-  };
+  return { isValid: true };
 };
 
 export const validatePassword = (password: string): {
   isValid: boolean;
   error?: string;
   strength?: 'weak' | 'medium' | 'strong';
-  requirements: PasswordRequirements;
 } => {
-  const requirements = checkPasswordRequirements(password);
-
   if (!password) {
-    return { isValid: false, error: 'Password is required', requirements };
+    return { isValid: false, error: 'Password is required' };
   }
 
-  if (!requirements.minLength) {
+  if (password.length < 8) {
     return {
       isValid: false,
-      error: 'Password must be at least 8 characters',
-      strength: 'weak',
-      requirements,
-    };
-  }
-
-  if (!requirements.hasNumber || !requirements.hasLetter) {
-    return {
-      isValid: false,
-      error: 'Password must contain both letters and numbers',
-      strength: 'weak',
-      requirements,
+      error: 'Password must be at least 8 characters long',
+      strength: 'weak'
     };
   }
 
   const hasUpperCase = /[A-Z]/.test(password);
   const hasLowerCase = /[a-z]/.test(password);
+  const hasNumber = /\d/.test(password);
   const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
 
-  const extraCriteria = [hasUpperCase && hasLowerCase, hasSpecialChar].filter(Boolean).length;
+  const criteriaCount = [hasUpperCase, hasLowerCase, hasNumber, hasSpecialChar].filter(Boolean).length;
 
-  if (extraCriteria === 0) {
-    return { isValid: true, strength: 'medium', requirements };
+  if (criteriaCount < 2) {
+    return {
+      isValid: false,
+      error: 'Password must contain at least 2 of: uppercase, lowercase, number, special character',
+      strength: 'weak'
+    };
   }
 
-  return { isValid: true, strength: 'strong', requirements };
+  if (criteriaCount === 2) {
+    return { isValid: true, strength: 'medium' };
+  }
+
+  return { isValid: true, strength: 'strong' };
 };
 
 export const getPasswordStrengthColor = (strength?: 'weak' | 'medium' | 'strong'): string => {
@@ -99,21 +82,3 @@ export const getPasswordStrengthColor = (strength?: 'weak' | 'medium' | 'strong'
       return '#6b7280';
   }
 };
-
-export const formatPhoneNumber = (value: string): string => {
-  const digitsOnly = value.replace(/\D/g, '');
-
-  if (digitsOnly.length <= 3) {
-    return digitsOnly;
-  }
-
-  if (digitsOnly.length <= 6) {
-    return `(${digitsOnly.slice(0, 3)}) ${digitsOnly.slice(3)}`;
-  }
-
-  if (digitsOnly.length <= 10) {
-    return `(${digitsOnly.slice(0, 3)}) ${digitsOnly.slice(3, 6)}-${digitsOnly.slice(6)}`;
-  }
-
-  return `(${digitsOnly.slice(0, 3)}) ${digitsOnly.slice(3, 6)}-${digitsOnly.slice(6, 10)}`;
-};}
