@@ -166,3 +166,4 @@ The app uses Supabase Authentication with email/password:
 ## License
 
 This project is part of the GenerationConnect initiative to bridge the digital divide through intergenerational connections. 
+By: Adya S, Sahana R, and Zoya S
