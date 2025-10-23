@@ -6,12 +6,11 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { MessageSquare } from 'lucide-react-native';
+import { MessageSquare, AlertCircle } from 'lucide-react-native';
 
 type Conversation = {
   requestId: string;
@@ -28,6 +27,7 @@ export default function MessagesScreen() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     fetchConversations();
@@ -44,7 +44,8 @@ export default function MessagesScreen() {
 
     if (requestsError) {
       console.error('Error fetching requests:', requestsError);
-      Alert.alert('Error', 'Failed to load conversations');
+      setErrorMessage('Failed to load conversations');
+      setTimeout(() => setErrorMessage(''), 3000);
       setLoading(false);
       setRefreshing(false);
       return;
@@ -141,6 +142,12 @@ export default function MessagesScreen() {
 
   return (
     <View style={styles.container}>
+      {errorMessage ? (
+        <View style={styles.errorBanner}>
+          <AlertCircle size={20} color="#991b1b" />
+          <Text style={styles.errorBannerText}>{errorMessage}</Text>
+        </View>
+      ) : null}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Messages</Text>
       </View>
@@ -281,5 +288,20 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 18,
     color: '#6c757d',
+  },
+  errorBanner: {
+    backgroundColor: '#fee2e2',
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#fecaca',
+  },
+  errorBannerText: {
+    color: '#991b1b',
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
   },
 });

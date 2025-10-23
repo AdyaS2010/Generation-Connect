@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, Alert, ScrollView } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import { AlertCircle, CheckCircle } from 'lucide-react-native';
 
 // predefined categories for help requests
 // adya: to-do - make this dynamic so admins can add/remove categories
@@ -25,6 +26,8 @@ export default function CreateRequestScreen() {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   // creating a new help request from a senior
   const handleCreate = async () => {
@@ -33,12 +36,14 @@ export default function CreateRequestScreen() {
 
     // basic validation
     if (!title || !description || !category) {
-      Alert.alert('Error', 'Please fill in all fields');
+      setErrorMessage('Please fill in all fields');
+      setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
 
     if (!user) {
-      Alert.alert('Error', 'You must be logged in to create a request');
+      setErrorMessage('You must be logged in to create a request');
+      setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
 
@@ -60,21 +65,37 @@ export default function CreateRequestScreen() {
 
       if (error) {
         console.error('Request creation error:', error);
-        Alert.alert('Error', `Failed to create request: ${error.message}`);
+        setErrorMessage(`Failed to create request: ${error.message}`);
+        setTimeout(() => setErrorMessage(''), 3000);
       } else {
-        Alert.alert('Success', 'Your request has been posted! Students can now see and claim it.', [
-          { text: 'OK', onPress: () => router.back() },
-        ]);
+        setSuccessMessage('Your request has been posted! Students can now see and claim it.');
+        setTimeout(() => {
+          setSuccessMessage('');
+          router.back();
+        }, 2000);
       }
     } catch (err) {
       setLoading(false);
       console.error('Unexpected error:', err);
-      Alert.alert('Error', 'An unexpected error occurred. Please try again.');
+      setErrorMessage('An unexpected error occurred. Please try again.');
+      setTimeout(() => setErrorMessage(''), 3000);
     }
   };
 
   return (
     <ScrollView style={styles.container}>
+      {errorMessage ? (
+        <View style={styles.errorBanner}>
+          <AlertCircle size={20} color="#991b1b" />
+          <Text style={styles.errorBannerText}>{errorMessage}</Text>
+        </View>
+      ) : null}
+      {successMessage ? (
+        <View style={styles.successBanner}>
+          <CheckCircle size={20} color="#065f46" />
+          <Text style={styles.successBannerText}>{successMessage}</Text>
+        </View>
+      ) : null}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Back</Text>
@@ -235,5 +256,35 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 18,
     fontWeight: '600',
+  },
+  errorBanner: {
+    backgroundColor: '#fee2e2',
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#fecaca',
+  },
+  errorBannerText: {
+    color: '#991b1b',
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+  },
+  successBanner: {
+    backgroundColor: '#d1fae5',
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#a7f3d0',
+  },
+  successBannerText: {
+    color: '#065f46',
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
   },
 });

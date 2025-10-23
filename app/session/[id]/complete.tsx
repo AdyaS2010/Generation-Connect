@@ -6,12 +6,11 @@ import {
   Pressable,
   StyleSheet,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { ArrowLeft, Star } from 'lucide-react-native';
+import { ArrowLeft, Star, AlertCircle, CheckCircle } from 'lucide-react-native';
 
 export default function CompleteSessionScreen() {
   const router = useRouter();
@@ -22,6 +21,8 @@ export default function CompleteSessionScreen() {
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     fetchSession();
@@ -46,12 +47,14 @@ export default function CompleteSessionScreen() {
     if (!session) return;
 
     if (!actualDuration || parseInt(actualDuration) <= 0) {
-      Alert.alert('Error', 'Please enter the actual session duration');
+      setErrorMessage('Please enter the actual session duration');
+      setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
 
     if (rating === 0) {
-      Alert.alert('Error', 'Please provide a rating');
+      setErrorMessage('Please provide a rating');
+      setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
 
@@ -69,7 +72,8 @@ export default function CompleteSessionScreen() {
 
     if (sessionError) {
       setLoading(false);
-      Alert.alert('Error', 'Failed to complete session');
+      setErrorMessage('Failed to complete session');
+      setTimeout(() => setErrorMessage(''), 3000);
       console.error('Session update error:', sessionError);
       return;
     }
@@ -107,15 +111,27 @@ export default function CompleteSessionScreen() {
 
     setLoading(false);
 
-    Alert.alert(
-      'Success',
-      `Session completed! ${hoursToAdd.toFixed(2)} hours added to student's service record.`,
-      [{ text: 'OK', onPress: () => router.back() }]
-    );
+    setSuccessMessage(`Session completed! ${hoursToAdd.toFixed(2)} hours added to student's service record.`);
+    setTimeout(() => {
+      setSuccessMessage('');
+      router.back();
+    }, 2000);
   };
 
   return (
     <View style={styles.container}>
+      {errorMessage ? (
+        <View style={styles.errorBanner}>
+          <AlertCircle size={20} color="#991b1b" />
+          <Text style={styles.errorBannerText}>{errorMessage}</Text>
+        </View>
+      ) : null}
+      {successMessage ? (
+        <View style={styles.successBanner}>
+          <CheckCircle size={20} color="#065f46" />
+          <Text style={styles.successBannerText}>{successMessage}</Text>
+        </View>
+      ) : null}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <ArrowLeft size={24} color="#1a1a1a" />
@@ -293,5 +309,35 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 18,
     fontWeight: '600',
+  },
+  errorBanner: {
+    backgroundColor: '#fee2e2',
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#fecaca',
+  },
+  errorBannerText: {
+    color: '#991b1b',
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+  },
+  successBanner: {
+    backgroundColor: '#d1fae5',
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#a7f3d0',
+  },
+  successBannerText: {
+    color: '#065f46',
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
   },
 });

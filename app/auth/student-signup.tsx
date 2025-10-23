@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet, Alert, ScrollView } from 'react-native';
+import { View, Text, TextInput, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { validateEmail, validatePhone, validatePassword, getPasswordStrengthColor } from '@/lib/validation';
-import { Eye, EyeOff, Check, X } from 'lucide-react-native';
+import { Eye, EyeOff, Check, X, AlertCircle } from 'lucide-react-native';
 
 export default function StudentSignupScreen() {
   const router = useRouter();
@@ -18,6 +18,7 @@ export default function StudentSignupScreen() {
   const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const hasMinLength = password.length >= 8;
   const hasUpperCase = /[A-Z]/.test(password);
@@ -57,7 +58,8 @@ export default function StudentSignupScreen() {
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      Alert.alert('Validation Error', 'Please fix the errors in the form');
+      setErrorMessage('Please fix the errors in the form');
+      setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
 
@@ -72,7 +74,8 @@ export default function StudentSignupScreen() {
 
     if (authError) {
       setLoading(false);
-      Alert.alert('Sign Up Failed', authError.message);
+      setErrorMessage(authError.message);
+      setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
 
@@ -104,7 +107,8 @@ export default function StudentSignupScreen() {
         router.replace('/auth/upload-documents');
       } catch (error: any) {
         setLoading(false);
-        Alert.alert('Error', error.message || 'Failed to complete registration');
+        setErrorMessage(error.message || 'Failed to complete registration');
+        setTimeout(() => setErrorMessage(''), 3000);
         console.error('Registration error:', error);
       }
     }
@@ -112,6 +116,12 @@ export default function StudentSignupScreen() {
 
   return (
     <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
+      {errorMessage ? (
+        <View style={styles.errorBanner}>
+          <AlertCircle size={20} color="#991b1b" />
+          <Text style={styles.errorBannerText}>{errorMessage}</Text>
+        </View>
+      ) : null}
       <View style={styles.content}>
         <Text style={styles.title}>Sign Up as Student</Text>
         <Text style={styles.subtitle}>Volunteer and earn community service hours</Text>
@@ -487,5 +497,26 @@ const styles = StyleSheet.create({
   },
   requirementMet: {
     color: '#10b981',
+  },
+  errorBanner: {
+    backgroundColor: '#fee2e2',
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#fecaca',
+    width: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+  },
+  errorBannerText: {
+    color: '#991b1b',
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
   },
 });

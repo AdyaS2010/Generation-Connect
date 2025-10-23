@@ -6,14 +6,13 @@ import {
   FlatList,
   Pressable,
   RefreshControl,
-  Alert,
   Linking,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/database';
-import { Calendar, Video, CheckCircle } from 'lucide-react-native';
+import { Calendar, Video, CheckCircle, AlertCircle } from 'lucide-react-native';
 
 type Session = Database['public']['Tables']['sessions']['Row'];
 
@@ -23,6 +22,7 @@ export default function SessionsScreen() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     fetchSessions();
@@ -40,7 +40,8 @@ export default function SessionsScreen() {
 
     if (error) {
       console.error('Error fetching sessions:', error);
-      Alert.alert('Error', 'Failed to load sessions');
+      setErrorMessage('Failed to load sessions');
+      setTimeout(() => setErrorMessage(''), 3000);
     } else {
       setSessions(data || []);
     }
@@ -59,7 +60,8 @@ export default function SessionsScreen() {
     if (meetingLink) {
       Linking.openURL(meetingLink);
     } else {
-      Alert.alert('Error', 'Meeting link not available');
+      setErrorMessage('Meeting link not available');
+      setTimeout(() => setErrorMessage(''), 3000);
     }
   };
 
@@ -165,6 +167,12 @@ export default function SessionsScreen() {
 
   return (
     <View style={styles.container}>
+      {errorMessage ? (
+        <View style={styles.errorBanner}>
+          <AlertCircle size={20} color="#991b1b" />
+          <Text style={styles.errorBannerText}>{errorMessage}</Text>
+        </View>
+      ) : null}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Sessions</Text>
       </View>
@@ -340,5 +348,20 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 18,
     color: '#6c757d',
+  },
+  errorBanner: {
+    backgroundColor: '#fee2e2',
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#fecaca',
+  },
+  errorBannerText: {
+    color: '#991b1b',
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
   },
 });

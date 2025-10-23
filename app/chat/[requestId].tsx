@@ -8,13 +8,12 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/database';
-import { ArrowLeft, Send } from 'lucide-react-native';
+import { ArrowLeft, Send, AlertCircle } from 'lucide-react-native';
 
 type Message = Database['public']['Tables']['messages']['Row'];
 
@@ -28,6 +27,7 @@ export default function ChatScreen() {
   const [otherPerson, setOtherPerson] = useState<any>(null);
   const [sending, setSending] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // setting up real-time messaging with supabase subscriptions
   // this lets us get new messages instantly without polling
@@ -124,7 +124,8 @@ export default function ChatScreen() {
     setSending(false);
 
     if (error) {
-      Alert.alert('Error', 'Failed to send message');
+      setErrorMessage('Failed to send message');
+      setTimeout(() => setErrorMessage(''), 3000);
       console.error('Send message error:', error);
     } else {
       setNewMessage('');
@@ -172,6 +173,12 @@ export default function ChatScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={0}
     >
+      {errorMessage ? (
+        <View style={styles.errorBanner}>
+          <AlertCircle size={20} color="#991b1b" />
+          <Text style={styles.errorBannerText}>{errorMessage}</Text>
+        </View>
+      ) : null}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <ArrowLeft size={24} color="#1a1a1a" />
@@ -323,5 +330,20 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     opacity: 0.4,
+  },
+  errorBanner: {
+    backgroundColor: '#fee2e2',
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#fecaca',
+  },
+  errorBannerText: {
+    color: '#991b1b',
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
   },
 });

@@ -7,13 +7,12 @@ import {
   Pressable,
   TextInput,
   RefreshControl,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/database';
-import { Plus, Search } from 'lucide-react-native';
+import { Plus, Search, AlertCircle } from 'lucide-react-native';
 
 type HelpRequest = Database['public']['Tables']['help_requests']['Row'];
 
@@ -24,6 +23,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   // fetching requests based on user role
   // seniors see their own requests, students see open ones + their claimed ones
@@ -44,7 +44,8 @@ export default function HomeScreen() {
 
     if (error) {
       console.error('Error fetching requests:', error);
-      Alert.alert('Error', 'Failed to load requests');
+      setErrorMessage('Failed to load requests');
+      setTimeout(() => setErrorMessage(''), 3000);
     } else {
       setRequests(data || []);
     }
@@ -125,6 +126,12 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      {errorMessage ? (
+        <View style={styles.errorBanner}>
+          <AlertCircle size={20} color="#991b1b" />
+          <Text style={styles.errorBannerText}>{errorMessage}</Text>
+        </View>
+      ) : null}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>
           {profile?.role === 'senior' ? 'My Requests' : 'Browse Requests'}
@@ -313,5 +320,20 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 18,
     color: '#6c757d',
+  },
+  errorBanner: {
+    backgroundColor: '#fee2e2',
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#fecaca',
+  },
+  errorBannerText: {
+    color: '#991b1b',
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
   },
 });

@@ -6,12 +6,11 @@ import {
   Pressable,
   StyleSheet,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { ArrowLeft } from 'lucide-react-native';
+import { ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react-native';
 
 export default function CreateSessionScreen() {
   const router = useRouter();
@@ -24,6 +23,8 @@ export default function CreateSessionScreen() {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   // loading the request details when the page mounts
   useEffect(() => {
@@ -44,7 +45,8 @@ export default function CreateSessionScreen() {
 
     if (error) {
       console.error('Error fetching request:', error);
-      window.alert('Failed to load request details');
+      setErrorMessage('Failed to load request details');
+      setTimeout(() => setErrorMessage(''), 3000);
     } else {
       console.log('Request data:', data);
       setRequest(data);
@@ -63,17 +65,20 @@ export default function CreateSessionScreen() {
   const handleCreateSession = async () => {
     // basic validation to make sure all required fields are filled
     if (!scheduledDate || !scheduledTime || !duration) {
-      window.alert('Please fill in all required fields');
+      setErrorMessage('Please fill in all required fields');
+      setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
 
     if (!request) {
-      window.alert('Request information not loaded. Please try again.');
+      setErrorMessage('Request information not loaded. Please try again.');
+      setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
 
     if (!user) {
-      window.alert('You must be signed in to schedule a session.');
+      setErrorMessage('You must be signed in to schedule a session.');
+      setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
 
@@ -81,7 +86,8 @@ export default function CreateSessionScreen() {
 
     // making sure they're not trying to schedule in the past
     if (scheduledDateTime < new Date()) {
-      Alert.alert('Error', 'Please select a future date and time');
+      setErrorMessage('Please select a future date and time');
+      setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
 
@@ -104,7 +110,8 @@ export default function CreateSessionScreen() {
 
     if (sessionError) {
       setLoading(false);
-      window.alert(`Failed to create session: ${sessionError.message}`);
+      setErrorMessage(`Failed to create session: ${sessionError.message}`);
+      setTimeout(() => setErrorMessage(''), 3000);
       console.error('Session creation error:', sessionError);
       return;
     }
@@ -123,8 +130,11 @@ export default function CreateSessionScreen() {
       console.error('Request update error:', requestError);
     }
 
-    window.alert('Session scheduled successfully! You and the senior will receive the meeting link.');
-    router.back();
+    setSuccessMessage('Session scheduled successfully! You and the senior will receive the meeting link.');
+    setTimeout(() => {
+      setSuccessMessage('');
+      router.back();
+    }, 2000);
   };
 
   if (pageLoading) {
@@ -166,6 +176,18 @@ export default function CreateSessionScreen() {
 
   return (
     <View style={styles.container}>
+      {errorMessage ? (
+        <View style={styles.errorBanner}>
+          <AlertCircle size={20} color="#991b1b" />
+          <Text style={styles.errorBannerText}>{errorMessage}</Text>
+        </View>
+      ) : null}
+      {successMessage ? (
+        <View style={styles.successBanner}>
+          <CheckCircle size={20} color="#065f46" />
+          <Text style={styles.successBannerText}>{successMessage}</Text>
+        </View>
+      ) : null}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <ArrowLeft size={24} color="#1a1a1a" />
@@ -403,5 +425,35 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  errorBanner: {
+    backgroundColor: '#fee2e2',
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#fecaca',
+  },
+  errorBannerText: {
+    color: '#991b1b',
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+  },
+  successBanner: {
+    backgroundColor: '#d1fae5',
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#a7f3d0',
+  },
+  successBannerText: {
+    color: '#065f46',
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
   },
 });
