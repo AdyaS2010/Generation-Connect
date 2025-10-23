@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
+import { useRouter, useSegments } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { Database } from '../types/database';
 
@@ -23,6 +24,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const segments = useSegments();
+  const router = useRouter();
 
   // grabbing user profile data from our profiles table
   const fetchProfile = async (userId: string) => {
@@ -60,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       })();
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       (async () => {
         setSession(session);
         setUser(session?.user ?? null);
@@ -69,6 +72,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setProfile(profileData);
         } else {
           setProfile(null);
+          if (event === 'SIGNED_OUT') {
+            router.replace('/');
+          }
         }
       })();
     });
@@ -83,9 +89,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('Supabase signOut error:', error);
         throw error;
       }
-      setSession(null);
-      setUser(null);
-      setProfile(null);
     } catch (error) {
       console.error('SignOut failed:', error);
       throw error;
