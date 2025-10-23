@@ -6,12 +6,12 @@ import {
   ScrollView,
   Pressable,
   TextInput,
-  Alert,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { LogOut, Edit2, Save, Clock, Star, Award, Upload } from 'lucide-react-native';
+import { LogOut, Edit2, Save, Clock, Star, Award, Upload, X, AlertCircle, CheckCircle } from 'lucide-react-native';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -22,6 +22,9 @@ export default function ProfileScreen() {
   const [phone, setPhone] = useState('');
   const [skills, setSkills] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showSignOutModal, setShowSignOutModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   // syncing form fields with the profile data whenever it changes
   useEffect(() => {
@@ -48,14 +51,15 @@ export default function ProfileScreen() {
     }
   };
 
-  // adya: to-do - add real-time validation as user types instead of on save
   const handleSave = async () => {
     if (!fullName.trim()) {
-      Alert.alert('Error', 'Name cannot be empty');
+      setErrorMessage('Name cannot be empty');
+      setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
 
     setLoading(true);
+    setErrorMessage('');
 
     const { error: profileError } = await supabase
       .from('profiles')
@@ -67,7 +71,8 @@ export default function ProfileScreen() {
 
     if (profileError) {
       setLoading(false);
-      Alert.alert('Error', 'Failed to update profile');
+      setErrorMessage('Failed to update profile');
+      setTimeout(() => setErrorMessage(''), 3000);
       console.error('Profile update error:', profileError);
       return;
     }
@@ -91,35 +96,19 @@ export default function ProfileScreen() {
     setLoading(false);
     setEditing(false);
     await refreshProfile();
-    Alert.alert('Success', 'Profile updated successfully');
+    setSuccessMessage('Profile updated successfully');
+    setTimeout(() => setSuccessMessage(''), 3000);
   };
 
-  const handleSignOut = async () => {
-    console.log('handleSignOut called');
-
-    const confirmed = window.confirm('Are you sure you want to sign out?');
-
-    if (confirmed) {
-      try {
-        console.log('User confirmed sign out, calling signOut()...');
-        await signOut();
-        console.log('Sign out successful, state cleared');
-        console.log('Attempting navigation to /...');
-
-        // Force navigation to home
-        if (typeof window !== 'undefined') {
-          window.location.href = '/';
-        } else {
-          router.replace('/');
-        }
-
-        console.log('Navigation command sent');
-      } catch (error) {
-        console.error('Sign out error:', error);
-        window.alert('Failed to sign out. Please try again.');
-      }
-    } else {
-      console.log('Sign out cancelled');
+  const handleSignOutConfirm = async () => {
+    setShowSignOutModal(false);
+    try {
+      await signOut();
+      router.replace('/');
+    } catch (error) {
+      console.error('Sign out error:', error);
+      setErrorMessage('Failed to sign out. Please try again.');
+      setTimeout(() => setErrorMessage(''), 3000);
     }
   };
 
@@ -142,13 +131,22 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
+      {errorMessage ? (
+        <View style={styles.errorBanner}>
+          <AlertCircle size={20} color="#991b1b" />
+          <Text style={styles.errorBannerText}>{errorMessage}</Text>
+        </View>
+      ) : null}
+      {successMessage ? (
+        <View style={styles.successBanner}>
+          <CheckCircle size={20} color="#065f46" />
+          <Text style={styles.successBannerText}>{successMessage}</Text>
+        </View>
+      ) : null}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Profile</Text>
         <Pressable
-          onPress={() => {
-            console.log('Header sign out button pressed!');
-            handleSignOut();
-          }}
+          onPress={() => setShowSignOutModal(true)}
           style={styles.signOutButton}
           hitSlop={8}
         >
@@ -320,16 +318,50 @@ export default function ProfileScreen() {
 
         <Pressable
           style={styles.signOutButtonFull}
-          onPress={() => {
-            console.log('Sign out button pressed!');
-            handleSignOut();
-          }}
+          onPress={() => setShowSignOutModal(true)}
           hitSlop={4}
         >
           <LogOut size={20} color="#ef4444" style={styles.buttonIcon} />
           <Text style={styles.signOutButtonText}>Sign Out</Text>
         </Pressable>
       </ScrollView>
+
+      <Modal
+        visible={showSignOutModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowSignOutModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Sign Out</Text>
+              <Pressable
+                onPress={() => setShowSignOutModal(false)}
+                style={styles.modalCloseButton}
+                hitSlop={8}
+              >
+                <X size={24} color="#6c757d" />
+              </Pressable>
+            </View>
+            <Text style={styles.modalText}>Are you sure you want to sign out?</Text>
+            <View style={styles.modalActions}>
+              <Pressable
+                style={styles.modalCancelButton}
+                onPress={() => setShowSignOutModal(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={styles.modalConfirmButton}
+                onPress={handleSignOutConfirm}
+              >
+                <Text style={styles.modalConfirmText}>Sign Out</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -553,5 +585,98 @@ const styles = StyleSheet.create({
     color: '#2563eb',
     fontSize: 14,
     fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1a1a1a',
+  },
+  modalCloseButton: {
+    padding: 4,
+  },
+  modalText: {
+    fontSize: 16,
+    color: '#6c757d',
+    marginBottom: 24,
+    lineHeight: 24,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  modalCancelButton: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#dee2e6',
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6c757d',
+  },
+  modalConfirmButton: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 12,
+    backgroundColor: '#ef4444',
+    alignItems: 'center',
+  },
+  modalConfirmText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  errorBanner: {
+    backgroundColor: '#fee2e2',
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#fecaca',
+  },
+  errorBannerText: {
+    color: '#991b1b',
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+  },
+  successBanner: {
+    backgroundColor: '#d1fae5',
+    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#a7f3d0',
+  },
+  successBannerText: {
+    color: '#065f46',
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
   },
 });
