@@ -8,7 +8,7 @@ import {
   TextInput,
   Modal,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useRootNavigationState } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { LogOut, Edit2, Save, Clock, Star, Award, Upload, X, AlertCircle, CheckCircle } from 'lucide-react-native';
@@ -104,6 +104,10 @@ export default function ProfileScreen() {
     setShowSignOutModal(false);
     try {
       await signOut();
+      setTimeout(() => {
+        router.dismissAll();
+        router.replace('/');
+      }, 100);
     } catch (error) {
       console.error('Sign out error:', error);
       setErrorMessage('Failed to sign out. Please try again.');
