@@ -106,6 +106,7 @@ types/
 2. Install dependencies:
 ```bash
 npm install
+npm install -g expo-cli
 ```
 
 3. Set up environment variables:
@@ -118,6 +119,7 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 4. Start the development server:
 ```bash
 npm run dev
+npx expo start
 ```
 
 ### Building for Production
