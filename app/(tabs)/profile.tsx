@@ -104,8 +104,7 @@ export default function ProfileScreen() {
     setShowSignOutModal(false);
     try {
       await signOut();
-      // router.replace('/'); --> hv to go back an entire screen to navigate to app open (home) page
-      router.back();
+      router.replace('/');
     } catch (error) {
       console.error('Sign out error:', error);
       setErrorMessage('Failed to sign out. Please try again.');
