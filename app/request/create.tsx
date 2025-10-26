@@ -5,8 +5,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { AlertCircle, CheckCircle } from 'lucide-react-native';
 
-// predefined categories for help requests
-// adya: to-do - make this dynamic so admins can add/remove categories
 const CATEGORIES = [
   'Social Media',
   'Email',
@@ -19,24 +17,61 @@ const CATEGORIES = [
   'Other',
 ];
 
+const AVAILABLE_TAGS = [
+  // Digital/Tech Tasks
+  'Email', 'Social Media', 'Video Calls', 'Messaging', 'Internet Browsing',
+  'Online Shopping', 'Banking Apps', 'Health Apps', 'Calendar', 'Photos',
+  'Smartphone Setup', 'Computer Setup', 'Tablet Setup', 'WiFi Setup',
+  'Password Reset', 'Account Setup', 'App Installation', 'Software Update',
+
+  // Physical Tasks
+  'Machine Operation', 'Remote Control', 'TV Setup', 'Phone Setup',
+  'Finding Items', 'Reading Instructions', 'Organizing', 'Sorting',
+  'Device Assembly', 'Cable Management', 'Button Navigation',
+
+  // Communication & Learning
+  'Teaching', 'Explaining', 'Writing', 'Reading', 'Translating',
+  'Troubleshooting', 'Documentation', 'Guidance',
+];
+
+const URGENCY_LEVELS = [
+  { value: 'low', label: 'Low - Can wait a few days', color: '#6c757d' },
+  { value: 'medium', label: 'Medium - Within this week', color: '#3b82f6' },
+  { value: 'high', label: 'High - Within 24 hours', color: '#f59e0b' },
+  { value: 'urgent', label: 'Urgent - As soon as possible', color: '#ef4444' },
+];
+
 export default function CreateRequestScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [urgency, setUrgency] = useState('medium');
+  const [estimatedDuration, setEstimatedDuration] = useState('30');
+  const [physicalTask, setPhysicalTask] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  // creating a new help request from a senior
-  const handleCreate = async () => {
-    console.log('handleCreate called');
-    console.log('Form values:', { title, description, category, userId: user?.id });
+  const toggleTag = (tag: string) => {
+    setSelectedTags(prev =>
+      prev.includes(tag)
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+  };
 
-    // basic validation
+  const handleCreate = async () => {
     if (!title || !description || !category) {
       setErrorMessage('Please fill in all fields');
+      setTimeout(() => setErrorMessage(''), 3000);
+      return;
+    }
+
+    if (selectedTags.length === 0) {
+      setErrorMessage('Please select at least one tag');
       setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
@@ -48,16 +83,17 @@ export default function CreateRequestScreen() {
     }
 
     setLoading(true);
-    console.log('Creating request...');
 
     try {
-      // creating the request in the database
-      // status starts as 'open' so students can see and claim it
       const { data, error } = await supabase.from('help_requests').insert({
         senior_id: user.id,
         title: title.trim(),
         description: description.trim(),
         category,
+        tags: selectedTags,
+        urgency,
+        estimated_duration: parseInt(estimatedDuration) || 30,
+        physical_task: physicalTask,
         status: 'open',
       } as any);
 
@@ -155,6 +191,85 @@ export default function CreateRequestScreen() {
           </View>
         </View>
 
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Tags * (Select all that apply)</Text>
+          <View style={styles.tagGrid}>
+            {AVAILABLE_TAGS.map((tag) => (
+              <Pressable
+                key={tag}
+                style={[
+                  styles.tagButton,
+                  selectedTags.includes(tag) && styles.tagButtonSelected,
+                ]}
+                onPress={() => toggleTag(tag)}
+                disabled={loading}
+              >
+                <Text
+                  style={[
+                    styles.tagButtonText,
+                    selectedTags.includes(tag) && styles.tagButtonTextSelected,
+                  ]}
+                >
+                  {tag}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Urgency Level *</Text>
+          {URGENCY_LEVELS.map((level) => (
+            <Pressable
+              key={level.value}
+              style={[
+                styles.urgencyOption,
+                urgency === level.value && styles.urgencyOptionSelected,
+                urgency === level.value && { borderColor: level.color },
+              ]}
+              onPress={() => setUrgency(level.value)}
+              disabled={loading}
+            >
+              <View style={[styles.urgencyDot, { backgroundColor: level.color }]} />
+              <Text
+                style={[
+                  styles.urgencyText,
+                  urgency === level.value && styles.urgencyTextSelected,
+                ]}
+              >
+                {level.label}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Estimated Duration (minutes)</Text>
+          <TextInput
+            style={styles.input}
+            value={estimatedDuration}
+            onChangeText={setEstimatedDuration}
+            placeholder="30"
+            keyboardType="number-pad"
+            editable={!loading}
+          />
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Pressable
+            style={styles.checkboxRow}
+            onPress={() => setPhysicalTask(!physicalTask)}
+            disabled={loading}
+          >
+            <View style={[styles.checkbox, physicalTask && styles.checkboxChecked]}>
+              {physicalTask && <Text style={styles.checkmark}>✓</Text>}
+            </View>
+            <Text style={styles.checkboxLabel}>
+              This task involves physical activity (e.g., operating a machine, finding items)
+            </Text>
+          </Pressable>
+        </View>
+
         <Pressable
           style={[styles.createButton, loading && styles.buttonDisabled]}
           onPress={handleCreate}
@@ -241,6 +356,91 @@ const styles = StyleSheet.create({
   },
   categoryButtonTextSelected: {
     color: '#ffffff',
+  },
+  tagGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  tagButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    backgroundColor: '#f1f5f9',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  tagButtonSelected: {
+    backgroundColor: '#2563eb',
+    borderColor: '#2563eb',
+  },
+  tagButtonText: {
+    fontSize: 13,
+    color: '#475569',
+    fontWeight: '500',
+  },
+  tagButtonTextSelected: {
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  urgencyOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#dee2e6',
+    marginBottom: 8,
+  },
+  urgencyOptionSelected: {
+    borderWidth: 2,
+    backgroundColor: '#f8fafc',
+  },
+  urgencyDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 12,
+  },
+  urgencyText: {
+    fontSize: 15,
+    color: '#6c757d',
+    flex: 1,
+  },
+  urgencyTextSelected: {
+    color: '#1a1a1a',
+    fontWeight: '600',
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#dee2e6',
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  checkboxChecked: {
+    backgroundColor: '#2563eb',
+    borderColor: '#2563eb',
+  },
+  checkmark: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  checkboxLabel: {
+    fontSize: 15,
+    color: '#1a1a1a',
+    flex: 1,
+    lineHeight: 22,
   },
   createButton: {
     backgroundColor: '#2563eb',
