@@ -32,15 +32,6 @@ export default function TabLayout() {
           tabBarIcon: ({ size, color }) => <Home size={size} color={color} />,
         }}
       />
-      {profile?.role === 'senior' && (
-        <Tabs.Screen
-          name="community"
-          options={{
-            title: 'Community',
-            tabBarIcon: ({ size, color }) => <Users size={size} color={color} />,
-          }}
-        />
-      )}
       {profile?.role === 'student' && (
         <Tabs.Screen
           name="dashboard"
@@ -69,6 +60,12 @@ export default function TabLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ size, color }) => <User size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="community"
+        options={{
+          href: null,
         }}
       />
     </Tabs>
