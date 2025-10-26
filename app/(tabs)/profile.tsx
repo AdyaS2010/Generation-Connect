@@ -349,7 +349,7 @@ export default function ProfileScreen() {
             >
               <View style={styles.settingsRowLeft}>
                 <Bell size={20} color="#2563eb" />
-                <Text style={styles.settingsRowText}>Reminder Settings</Text>
+                <Text style={styles.settingsRowText}>Notification Reminders</Text>
               </View>
               <ChevronRight size={20} color="#6c757d" />
             </Pressable>
