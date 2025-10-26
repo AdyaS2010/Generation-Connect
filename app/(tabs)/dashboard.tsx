@@ -226,11 +226,11 @@ export default function DashboardScreen() {
       case 'milestone':
         return '#2563eb';
       case 'skill':
-        return '#10b981';
+        return '#8b5cf6';
       case 'impact':
         return '#f59e0b';
       case 'special':
-        return '#8b5cf6';
+        return '#10b981';
       default:
         return '#6c757d';
     }
@@ -557,7 +557,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   silhouetteContainer: {
-    opacity: 0.3,
+    opacity: 0.7,
   },
   badgeName: {
     fontSize: 13,
