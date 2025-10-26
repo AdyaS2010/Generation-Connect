@@ -7,12 +7,14 @@ import {
   Pressable,
   RefreshControl,
   Linking,
+  ScrollView,
+  Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/database';
-import { Calendar, Video, CheckCircle, AlertCircle, List } from 'lucide-react-native';
+import { Calendar, Video, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, X } from 'lucide-react-native';
 
 type Session = Database['public']['Tables']['sessions']['Row'];
 
@@ -23,7 +25,9 @@ export default function SessionsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDaySessions, setSelectedDaySessions] = useState<Session[]>([]);
 
   useEffect(() => {
     fetchSessions();
@@ -89,157 +93,167 @@ export default function SessionsScreen() {
     return status.replace('_', ' ').toUpperCase();
   };
 
-  const groupSessionsByDate = () => {
-    const grouped: { [key: string]: Session[] } = {};
-    sessions.forEach(session => {
-      const dateKey = new Date(session.scheduled_time).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
-      if (!grouped[dateKey]) {
-        grouped[dateKey] = [];
-      }
-      grouped[dateKey].push(session);
+  const getDaysInMonth = (date: Date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+
+    return { daysInMonth, startingDayOfWeek, year, month };
+  };
+
+  const getSessionsForDate = (date: Date) => {
+    return sessions.filter(session => {
+      const sessionDate = new Date(session.scheduled_time);
+      return sessionDate.getFullYear() === date.getFullYear() &&
+             sessionDate.getMonth() === date.getMonth() &&
+             sessionDate.getDate() === date.getDate();
     });
-    return Object.entries(grouped).sort((a, b) =>
-      new Date(a[1][0].scheduled_time).getTime() - new Date(b[1][0].scheduled_time).getTime()
-    );
+  };
+
+  const previousMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1));
+  };
+
+  const nextMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1));
+  };
+
+  const handleDatePress = (day: number) => {
+    const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+    const daySessions = getSessionsForDate(date);
+    if (daySessions.length > 0) {
+      setSelectedDate(date);
+      setSelectedDaySessions(daySessions);
+    }
   };
 
   const renderCalendarView = () => {
-    const groupedSessions = groupSessionsByDate();
+    const { daysInMonth, startingDayOfWeek, year, month } = getDaysInMonth(currentMonth);
+    const weeks: (number | null)[][] = [];
+    let currentWeek: (number | null)[] = [];
+
+    for (let i = 0; i < startingDayOfWeek; i++) {
+      currentWeek.push(null);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      currentWeek.push(day);
+      if (currentWeek.length === 7) {
+        weeks.push(currentWeek);
+        currentWeek = [];
+      }
+    }
+
+    if (currentWeek.length > 0) {
+      while (currentWeek.length < 7) {
+        currentWeek.push(null);
+      }
+      weeks.push(currentWeek);
+    }
+
+    const today = new Date();
+    const isToday = (day: number) => {
+      return today.getFullYear() === year &&
+             today.getMonth() === month &&
+             today.getDate() === day;
+    };
 
     return (
-      <FlatList
-        data={groupedSessions}
-        renderItem={({ item: [date, dateSessions] }) => (
-          <View style={styles.dateGroup}>
-            <View style={styles.dateHeader}>
-              <Text style={styles.dateHeaderText}>{date}</Text>
-              <Text style={styles.dateHeaderCount}>
-                {dateSessions.length} {dateSessions.length === 1 ? 'session' : 'sessions'}
-              </Text>
-            </View>
-            {dateSessions.map((session) => (
-              <View key={session.id} style={styles.calendarSessionCard}>
-                <View style={styles.timeColumn}>
-                  <Text style={styles.calendarTime}>
-                    {new Date(session.scheduled_time).toLocaleTimeString('en-US', {
-                      hour: 'numeric',
-                      minute: '2-digit',
-                    })}
-                  </Text>
-                  <Text style={styles.calendarDuration}>{session.duration_minutes} min</Text>
-                </View>
-                <View style={styles.calendarSessionContent}>
-                  <View style={styles.calendarSessionHeader}>
-                    <View style={[styles.statusDot, { backgroundColor: getStatusColor(session.status) }]} />
-                    <Text style={styles.calendarStatusText}>{getStatusLabel(session.status)}</Text>
-                  </View>
-                  {session.notes && (
-                    <Text style={styles.calendarNotes} numberOfLines={2}>
-                      {session.notes}
-                    </Text>
-                  )}
-                  <View style={styles.calendarActions}>
-                    {session.status === 'scheduled' && new Date(session.scheduled_time) > new Date() && (
-                      <Pressable
-                        style={styles.calendarJoinButton}
-                        onPress={() => handleJoinMeeting(session.meeting_link || '')}
-                      >
-                        <Video size={16} color="#2563eb" />
-                        <Text style={styles.calendarJoinText}>Join</Text>
-                      </Pressable>
-                    )}
-                    {profile?.role === 'senior' && session.status === 'completed' && !session.senior_signed_off && (
-                      <Pressable
-                        style={styles.calendarSignOffButton}
-                        onPress={() => handleCompleteSession(session.id)}
-                      >
-                        <CheckCircle size={16} color="#10b981" />
-                        <Text style={styles.calendarSignOffText}>Sign Off</Text>
-                      </Pressable>
-                    )}
-                  </View>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
-        keyExtractor={([date]) => date}
-        contentContainerStyle={styles.listContent}
+      <ScrollView
+        style={styles.calendarContainer}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      />
-    );
-  };
-
-  const renderSession = ({ item }: { item: Session }) => {
-    const isUpcoming = new Date(item.scheduled_time) > new Date();
-    const isPast = new Date(item.scheduled_time) < new Date();
-    const canComplete = profile?.role === 'senior' && item.status === 'completed' && !item.senior_signed_off;
-
-    return (
-      <View style={styles.sessionCard}>
-        <View style={styles.sessionHeader}>
-          <View style={styles.dateContainer}>
-            <Calendar size={20} color="#2563eb" />
-            <Text style={styles.dateText}>
-              {new Date(item.scheduled_time).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-              })}
-            </Text>
-            <Text style={styles.timeText}>
-              {new Date(item.scheduled_time).toLocaleTimeString('en-US', {
-                hour: 'numeric',
-                minute: '2-digit',
-              })}
-            </Text>
-          </View>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-            <Text style={styles.statusText}>{getStatusLabel(item.status)}</Text>
-          </View>
-        </View>
-
-        <Text style={styles.durationText}>{item.duration_minutes} minutes</Text>
-
-        {item.notes && (
-          <Text style={styles.notesText} numberOfLines={2}>
-            {item.notes}
+      >
+        <View style={styles.monthHeader}>
+          <Pressable onPress={previousMonth} style={styles.monthButton}>
+            <ChevronLeft size={24} color="#2563eb" />
+          </Pressable>
+          <Text style={styles.monthText}>
+            {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
           </Text>
-        )}
-
-        <View style={styles.sessionActions}>
-          {item.status === 'scheduled' && isUpcoming && (
-            <Pressable
-              style={styles.joinButton}
-              onPress={() => handleJoinMeeting(item.meeting_link || '')}
-            >
-              <Video size={18} color="#ffffff" style={styles.buttonIcon} />
-              <Text style={styles.joinButtonText}>Join Meeting</Text>
-            </Pressable>
-          )}
-
-          {canComplete && (
-            <Pressable
-              style={styles.completeButton}
-              onPress={() => handleCompleteSession(item.id)}
-            >
-              <CheckCircle size={18} color="#ffffff" style={styles.buttonIcon} />
-              <Text style={styles.completeButtonText}>Sign Off</Text>
-            </Pressable>
-          )}
+          <Pressable onPress={nextMonth} style={styles.monthButton}>
+            <ChevronRight size={24} color="#2563eb" />
+          </Pressable>
         </View>
 
-        {item.senior_signed_off && (
-          <View style={styles.signOffBadge}>
-            <CheckCircle size={16} color="#10b981" />
-            <Text style={styles.signOffText}>Signed off by senior</Text>
+        <View style={styles.weekDaysHeader}>
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+            <View key={day} style={styles.weekDayCell}>
+              <Text style={styles.weekDayText}>{day}</Text>
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.calendarGrid}>
+          {weeks.map((week, weekIndex) => (
+            <View key={weekIndex} style={styles.weekRow}>
+              {week.map((day, dayIndex) => {
+                if (!day) {
+                  return <View key={dayIndex} style={styles.dayCell} />;
+                }
+
+                const date = new Date(year, month, day);
+                const daySessions = getSessionsForDate(date);
+                const hasEvents = daySessions.length > 0;
+
+                return (
+                  <Pressable
+                    key={dayIndex}
+                    style={[
+                      styles.dayCell,
+                      isToday(day) && styles.todayCell,
+                    ]}
+                    onPress={() => handleDatePress(day)}
+                  >
+                    <Text style={[
+                      styles.dayText,
+                      isToday(day) && styles.todayText,
+                    ]}>
+                      {day}
+                    </Text>
+                    {hasEvents && (
+                      <View style={styles.eventIndicators}>
+                        {daySessions.slice(0, 3).map((session, idx) => (
+                          <View
+                            key={session.id}
+                            style={[
+                              styles.eventDot,
+                              { backgroundColor: getStatusColor(session.status) }
+                            ]}
+                          />
+                        ))}
+                        {daySessions.length > 3 && (
+                          <Text style={styles.moreText}>+{daySessions.length - 3}</Text>
+                        )}
+                      </View>
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.legendContainer}>
+          <Text style={styles.legendTitle}>Status Legend:</Text>
+          <View style={styles.legendItems}>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: getStatusColor('scheduled') }]} />
+              <Text style={styles.legendText}>Scheduled</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: getStatusColor('in_progress') }]} />
+              <Text style={styles.legendText}>In Progress</Text>
+            </View>
+            <View style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: getStatusColor('completed') }]} />
+              <Text style={styles.legendText}>Completed</Text>
+            </View>
           </View>
-        )}
-      </View>
+        </View>
+      </ScrollView>
     );
   };
 
@@ -261,20 +275,6 @@ export default function SessionsScreen() {
       ) : null}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Sessions</Text>
-        <View style={styles.toggleContainer}>
-          <Pressable
-            style={[styles.toggleButton, viewMode === 'list' && styles.toggleButtonActive]}
-            onPress={() => setViewMode('list')}
-          >
-            <List size={20} color={viewMode === 'list' ? '#ffffff' : '#6c757d'} />
-          </Pressable>
-          <Pressable
-            style={[styles.toggleButton, viewMode === 'calendar' && styles.toggleButtonActive]}
-            onPress={() => setViewMode('calendar')}
-          >
-            <Calendar size={20} color={viewMode === 'calendar' ? '#ffffff' : '#6c757d'} />
-          </Pressable>
-        </View>
       </View>
 
       {sessions.length === 0 ? (
@@ -287,17 +287,89 @@ export default function SessionsScreen() {
               : 'Claim a request to schedule your first session'}
           </Text>
         </View>
-      ) : viewMode === 'calendar' ? (
-        renderCalendarView()
       ) : (
-        <FlatList
-          data={sessions}
-          renderItem={renderSession}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        />
+        renderCalendarView()
       )}
+
+      <Modal
+        visible={selectedDate !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setSelectedDate(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {selectedDate?.toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </Text>
+              <Pressable onPress={() => setSelectedDate(null)} style={styles.closeButton}>
+                <X size={24} color="#6c757d" />
+              </Pressable>
+            </View>
+            <ScrollView style={styles.modalScroll}>
+              {selectedDaySessions.map((session) => {
+                const canComplete = profile?.role === 'senior' && session.status === 'completed' && !session.senior_signed_off;
+                return (
+                  <View key={session.id} style={styles.modalSessionCard}>
+                    <View style={styles.modalSessionHeader}>
+                      <Text style={styles.modalSessionTime}>
+                        {new Date(session.scheduled_time).toLocaleTimeString('en-US', {
+                          hour: 'numeric',
+                          minute: '2-digit',
+                        })}
+                      </Text>
+                      <View style={[styles.modalStatusBadge, { backgroundColor: getStatusColor(session.status) }]}>
+                        <Text style={styles.modalStatusText}>{getStatusLabel(session.status)}</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.modalDuration}>{session.duration_minutes} minutes</Text>
+                    {session.notes && (
+                      <Text style={styles.modalNotes}>{session.notes}</Text>
+                    )}
+                    <View style={styles.modalActions}>
+                      {session.status === 'scheduled' && new Date(session.scheduled_time) > new Date() && (
+                        <Pressable
+                          style={styles.modalJoinButton}
+                          onPress={() => {
+                            handleJoinMeeting(session.meeting_link || '');
+                            setSelectedDate(null);
+                          }}
+                        >
+                          <Video size={18} color="#ffffff" />
+                          <Text style={styles.modalJoinText}>Join Meeting</Text>
+                        </Pressable>
+                      )}
+                      {canComplete && (
+                        <Pressable
+                          style={styles.modalCompleteButton}
+                          onPress={() => {
+                            handleCompleteSession(session.id);
+                            setSelectedDate(null);
+                          }}
+                        >
+                          <CheckCircle size={18} color="#ffffff" />
+                          <Text style={styles.modalCompleteText}>Sign Off</Text>
+                        </Pressable>
+                      )}
+                    </View>
+                    {session.senior_signed_off && (
+                      <View style={styles.modalSignOffBadge}>
+                        <CheckCircle size={16} color="#10b981" />
+                        <Text style={styles.modalSignOffText}>Signed off by senior</Text>
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -314,9 +386,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     padding: 20,
     paddingTop: 60,
     backgroundColor: '#ffffff',
@@ -327,22 +396,6 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
     color: '#1a1a1a',
-  },
-  toggleContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#f1f5f9',
-    borderRadius: 8,
-    padding: 4,
-    gap: 4,
-  },
-  toggleButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    backgroundColor: 'transparent',
-  },
-  toggleButtonActive: {
-    backgroundColor: '#2563eb',
   },
   listContent: {
     padding: 16,
@@ -470,114 +523,238 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#6c757d',
   },
-  dateGroup: {
-    marginBottom: 24,
+  calendarContainer: {
+    flex: 1,
+    backgroundColor: '#ffffff',
   },
-  dateHeader: {
+  monthHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#f1f5f9',
-    borderBottomWidth: 2,
-    borderBottomColor: '#2563eb',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
-  dateHeaderText: {
+  monthButton: {
+    padding: 8,
+  },
+  monthText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1a1a1a',
+  },
+  weekDaysHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#f8f9fa',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  weekDayCell: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  weekDayText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#6c757d',
+  },
+  calendarGrid: {
+    padding: 4,
+  },
+  weekRow: {
+    flexDirection: 'row',
+  },
+  dayCell: {
+    flex: 1,
+    aspectRatio: 1,
+    padding: 4,
+    alignItems: 'center',
+    borderWidth: 0.5,
+    borderColor: '#e5e7eb',
+  },
+  todayCell: {
+    backgroundColor: '#eff6ff',
+    borderColor: '#2563eb',
+    borderWidth: 2,
+  },
+  dayText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  todayText: {
+    color: '#2563eb',
+  },
+  eventIndicators: {
+    flexDirection: 'row',
+    gap: 3,
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  eventDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  moreText: {
+    fontSize: 10,
+    color: '#6c757d',
+    fontWeight: '600',
+  },
+  legendContainer: {
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    backgroundColor: '#f8f9fa',
+  },
+  legendTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 12,
+  },
+  legendItems: {
+    flexDirection: 'row',
+    gap: 16,
+    flexWrap: 'wrap',
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  legendText: {
+    fontSize: 13,
+    color: '#6c757d',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '80%',
+    paddingBottom: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    flex: 1,
+  },
+  closeButton: {
+    padding: 4,
+  },
+  modalScroll: {
+    padding: 16,
+  },
+  modalSessionCard: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  modalSessionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  modalSessionTime: {
     fontSize: 18,
     fontWeight: '700',
     color: '#1a1a1a',
   },
-  dateHeaderCount: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#6c757d',
+  modalStatusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
-  calendarSessionCard: {
-    flexDirection: 'row',
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-    padding: 16,
-  },
-  timeColumn: {
-    width: 80,
-    paddingRight: 16,
-    borderRightWidth: 2,
-    borderRightColor: '#e5e7eb',
-  },
-  calendarTime: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1a1a1a',
-    marginBottom: 4,
-  },
-  calendarDuration: {
-    fontSize: 13,
-    color: '#6c757d',
-  },
-  calendarSessionContent: {
-    flex: 1,
-    paddingLeft: 16,
-  },
-  calendarSessionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-    gap: 8,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  calendarStatusText: {
+  modalStatusText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#6c757d',
-    textTransform: 'uppercase',
+    color: '#ffffff',
   },
-  calendarNotes: {
+  modalDuration: {
+    fontSize: 14,
+    color: '#6c757d',
+    marginBottom: 8,
+  },
+  modalNotes: {
     fontSize: 14,
     color: '#6c757d',
     lineHeight: 20,
     marginBottom: 12,
   },
-  calendarActions: {
+  modalActions: {
     flexDirection: 'row',
     gap: 8,
   },
-  calendarJoinButton: {
+  modalJoinButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#2563eb',
+    padding: 12,
+    borderRadius: 8,
+  },
+  modalJoinText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  modalCompleteButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#10b981',
+    padding: 12,
+    borderRadius: 8,
+  },
+  modalCompleteText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  modalSignOffBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#eff6ff',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#2563eb',
+    paddingTop: 12,
+    marginTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#dee2e6',
   },
-  calendarJoinText: {
+  modalSignOffText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#2563eb',
-  },
-  calendarSignOffButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#f0fdf4',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#10b981',
-  },
-  calendarSignOffText: {
-    fontSize: 14,
-    fontWeight: '600',
     color: '#10b981',
+    fontWeight: '600',
   },
   errorBanner: {
     backgroundColor: '#fee2e2',
