@@ -15,6 +15,7 @@ export default function RootLayout() {
         <Stack.Screen name="auth/senior-signup" />
         <Stack.Screen name="auth/student-signup" />
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="admin" />
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />
