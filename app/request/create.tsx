@@ -7,29 +7,27 @@ import { AlertCircle, CheckCircle } from 'lucide-react-native';
 
 const CATEGORIES = [
   'Social Media',
-  'Email',
   'Video Calls',
-  'Smartphone Setup',
+  'Device Setup',
   'Computer Basics',
   'Online Shopping',
-  'Banking Apps',
-  'Health Apps',
+  'Applications',
   'Other',
 ];
 
 const AVAILABLE_TAGS = [
-  // Digital/Tech Tasks
-  'Email', 'Social Media', 'Video Calls', 'Messaging', 'Internet Browsing',
-  'Online Shopping', 'Banking Apps', 'Health Apps', 'Calendar', 'Photos',
+  // Digital/tech Tasks
+  'Email', 'Social Media', 'Video Calls', 'Messaging', 'Internet Browsing', 'Photos',
+  'Online Shopping', 'Banking Apps', 'Health Apps', 'App Navigation', 'Calendar',
   'Smartphone Setup', 'Computer Setup', 'Tablet Setup', 'WiFi Setup',
   'Password Reset', 'Account Setup', 'App Installation', 'Software Update',
 
-  // Physical Tasks
+  // Physical tasks
   'Machine Operation', 'Remote Control', 'TV Setup', 'Phone Setup',
   'Finding Items', 'Reading Instructions', 'Organizing', 'Sorting',
   'Device Assembly', 'Cable Management', 'Button Navigation',
 
-  // Communication & Learning
+  // communication & learning
   'Teaching', 'Explaining', 'Writing', 'Reading', 'Translating',
   'Troubleshooting', 'Documentation', 'Guidance',
 ];
