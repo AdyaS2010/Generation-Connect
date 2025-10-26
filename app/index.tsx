@@ -11,7 +11,11 @@ export default function WelcomeScreen() {
 
   useEffect(() => {
     if (!loading && user && profile) {
-      router.replace('/(tabs)');
+      if (profile.role === 'admin') {
+        router.replace('/admin');
+      } else {
+        router.replace('/(tabs)');
+      }
     }
   }, [user, profile, loading]);
 
