@@ -131,72 +131,97 @@ export default function SessionsScreen() {
     }
   };
 
-  const renderSession = ({ item }: { item: Session }) => {
-    const isUpcoming = new Date(item.scheduled_time) > new Date();
-    const isPast = new Date(item.scheduled_time) < new Date();
-    const canComplete = profile?.role === 'senior' && item.status === 'completed' && !item.senior_signed_off;
+  const groupSessionsByDate = () => {
+    const grouped: { [key: string]: Session[] } = {};
+    sessions.forEach(session => {
+      const dateKey = new Date(session.scheduled_time).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = [];
+      }
+      grouped[dateKey].push(session);
+    });
+    return Object.entries(grouped).sort((a, b) =>
+      new Date(a[1][0].scheduled_time).getTime() - new Date(b[1][0].scheduled_time).getTime()
+    );
+  };
+
+  const renderListView = () => {
+    const groupedSessions = groupSessionsByDate();
 
     return (
-      <View style={styles.sessionCard}>
-        <View style={styles.sessionHeader}>
-          <View style={styles.dateContainer}>
-            <Calendar size={20} color="#2563eb" />
-            <Text style={styles.dateText}>
-              {new Date(item.scheduled_time).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-              })}
-            </Text>
-            <Text style={styles.timeText}>
-              {new Date(item.scheduled_time).toLocaleTimeString('en-US', {
-                hour: 'numeric',
-                minute: '2-digit',
-              })}
-            </Text>
+      <FlatList
+        data={groupedSessions}
+        renderItem={({ item: [date, dateSessions] }) => (
+          <View style={styles.dateGroup}>
+            <View style={styles.dateHeader}>
+              <Text style={styles.dateHeaderText}>{date}</Text>
+              <Text style={styles.dateHeaderCount}>
+                {dateSessions.length} {dateSessions.length === 1 ? 'session' : 'sessions'}
+              </Text>
+            </View>
+            {dateSessions.map((session) => {
+              const canComplete = profile?.role === 'senior' && session.status === 'completed' && !session.senior_signed_off;
+              return (
+                <View key={session.id} style={styles.timelineSessionCard}>
+                  <View style={styles.timeColumn}>
+                    <Text style={styles.timelineTime}>
+                      {new Date(session.scheduled_time).toLocaleTimeString('en-US', {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      })}
+                    </Text>
+                    <Text style={styles.timelineDuration}>{session.duration_minutes} min</Text>
+                  </View>
+                  <View style={styles.timelineSessionContent}>
+                    <View style={styles.timelineSessionHeader}>
+                      <View style={[styles.timelineStatusDot, { backgroundColor: getStatusColor(session.status) }]} />
+                      <Text style={styles.timelineStatusText}>{getStatusLabel(session.status)}</Text>
+                    </View>
+                    {session.notes && (
+                      <Text style={styles.timelineNotes} numberOfLines={2}>
+                        {session.notes}
+                      </Text>
+                    )}
+                    <View style={styles.timelineActions}>
+                      {session.status === 'scheduled' && new Date(session.scheduled_time) > new Date() && (
+                        <Pressable
+                          style={styles.timelineJoinButton}
+                          onPress={() => handleJoinMeeting(session.meeting_link || '')}
+                        >
+                          <Video size={16} color="#2563eb" />
+                          <Text style={styles.timelineJoinText}>Join</Text>
+                        </Pressable>
+                      )}
+                      {canComplete && (
+                        <Pressable
+                          style={styles.timelineSignOffButton}
+                          onPress={() => handleCompleteSession(session.id)}
+                        >
+                          <CheckCircle size={16} color="#10b981" />
+                          <Text style={styles.timelineSignOffText}>Sign Off</Text>
+                        </Pressable>
+                      )}
+                    </View>
+                    {session.senior_signed_off && (
+                      <View style={styles.timelineSignOffBadge}>
+                        <CheckCircle size={14} color="#10b981" />
+                        <Text style={styles.timelineSignOffBadgeText}>Signed off</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              );
+            })}
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-            <Text style={styles.statusText}>{getStatusLabel(item.status)}</Text>
-          </View>
-        </View>
-
-        <Text style={styles.durationText}>{item.duration_minutes} minutes</Text>
-
-        {item.notes && (
-          <Text style={styles.notesText} numberOfLines={2}>
-            {item.notes}
-          </Text>
         )}
-
-        <View style={styles.sessionActions}>
-          {item.status === 'scheduled' && isUpcoming && (
-            <Pressable
-              style={styles.joinButton}
-              onPress={() => handleJoinMeeting(item.meeting_link || '')}
-            >
-              <Video size={18} color="#ffffff" style={styles.buttonIcon} />
-              <Text style={styles.joinButtonText}>Join Meeting</Text>
-            </Pressable>
-          )}
-
-          {canComplete && (
-            <Pressable
-              style={styles.completeButton}
-              onPress={() => handleCompleteSession(item.id)}
-            >
-              <CheckCircle size={18} color="#ffffff" style={styles.buttonIcon} />
-              <Text style={styles.completeButtonText}>Sign Off</Text>
-            </Pressable>
-          )}
-        </View>
-
-        {item.senior_signed_off && (
-          <View style={styles.signOffBadge}>
-            <CheckCircle size={16} color="#10b981" />
-            <Text style={styles.signOffText}>Signed off by senior</Text>
-          </View>
-        )}
-      </View>
+        keyExtractor={([date]) => date}
+        contentContainerStyle={styles.listContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      />
     );
   };
 
@@ -374,13 +399,7 @@ export default function SessionsScreen() {
       ) : viewMode === 'calendar' ? (
         renderCalendarView()
       ) : (
-        <FlatList
-          data={sessions}
-          renderItem={renderSession}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContent}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        />
+        renderListView()
       )}
 
       <Modal
@@ -509,106 +528,128 @@ const styles = StyleSheet.create({
     backgroundColor: '#2563eb',
   },
   listContent: {
-    padding: 16,
+    paddingBottom: 16,
   },
-  sessionCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#dee2e6',
+  dateGroup: {
+    marginBottom: 24,
   },
-  sessionHeader: {
+  dateHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  dateContainer: {
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#f1f5f9',
+    borderBottomWidth: 2,
+    borderBottomColor: '#2563eb',
   },
-  dateText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1a1a1a',
-  },
-  timeText: {
-    fontSize: 14,
-    color: '#6c757d',
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  statusText: {
-    color: '#ffffff',
-    fontSize: 11,
+  dateHeaderText: {
+    fontSize: 18,
     fontWeight: '700',
+    color: '#1a1a1a',
   },
-  durationText: {
+  dateHeaderCount: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6c757d',
+  },
+  timelineSessionCard: {
+    flexDirection: 'row',
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    padding: 16,
+  },
+  timeColumn: {
+    width: 80,
+    paddingRight: 16,
+    borderRightWidth: 2,
+    borderRightColor: '#e5e7eb',
+  },
+  timelineTime: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  timelineDuration: {
+    fontSize: 13,
+    color: '#6c757d',
+  },
+  timelineSessionContent: {
+    flex: 1,
+    paddingLeft: 16,
+  },
+  timelineSessionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 8,
+  },
+  timelineStatusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  timelineStatusText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#6c757d',
+    textTransform: 'uppercase',
+  },
+  timelineNotes: {
     fontSize: 14,
     color: '#6c757d',
-    marginBottom: 8,
-  },
-  notesText: {
-    fontSize: 14,
-    color: '#1a1a1a',
-    marginBottom: 12,
     lineHeight: 20,
+    marginBottom: 12,
   },
-  sessionActions: {
+  timelineActions: {
     flexDirection: 'row',
     gap: 8,
   },
-  joinButton: {
-    backgroundColor: '#2563eb',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-  },
-  joinButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  completeButton: {
-    backgroundColor: '#10b981',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-  },
-  completeButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  buttonIcon: {
-    marginRight: 6,
-  },
-  signOffBadge: {
+  timelineJoinButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginTop: 12,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#dee2e6',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#eff6ff',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#2563eb',
   },
-  signOffText: {
+  timelineJoinText: {
     fontSize: 14,
+    fontWeight: '600',
+    color: '#2563eb',
+  },
+  timelineSignOffButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#f0fdf4',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#10b981',
+  },
+  timelineSignOffText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#10b981',
+  },
+  timelineSignOffBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  timelineSignOffBadgeText: {
+    fontSize: 12,
     color: '#10b981',
     fontWeight: '600',
   },
