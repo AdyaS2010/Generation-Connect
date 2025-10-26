@@ -85,27 +85,31 @@ export default function DashboardScreen() {
       if (statsError) throw statsError;
       setStats(statsData);
 
-      const { data: badgesData, error: badgesError } = await supabase
-        .from('student_badges')
-        .select('*, badges(*)')
-        .eq('student_id', profile!.id);
-
-      if (badgesError) throw badgesError;
+      const [{ data: allBadgesData }, { data: studentBadgesData }] = await Promise.all([
+        supabase.from('badges').select('*'),
+        supabase.from('student_badges').select('*').eq('student_id', profile!.id),
+      ]);
 
       const earned: Badge[] = [];
       const inProgress: Badge[] = [];
 
-      badgesData?.forEach((sb: any) => {
-        const badge = {
-          ...sb.badges,
-          earned_at: sb.earned_at,
-          progress: sb.progress,
+      const studentBadgesMap = new Map(
+        studentBadgesData?.map((sb) => [sb.badge_id, sb]) || []
+      );
+
+      allBadgesData?.forEach((badge: any) => {
+        const studentBadge = studentBadgesMap.get(badge.id);
+        const progress = studentBadge?.progress || 0;
+        const badgeWithProgress = {
+          ...badge,
+          earned_at: studentBadge?.earned_at,
+          progress,
         };
 
-        if (sb.progress >= sb.badges.requirement_value) {
-          earned.push(badge);
+        if (progress >= badge.requirement_value) {
+          earned.push(badgeWithProgress);
         } else {
-          inProgress.push(badge);
+          inProgress.push(badgeWithProgress);
         }
       });
 
@@ -131,13 +135,20 @@ export default function DashboardScreen() {
     setErrorMessage('');
 
     try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+
+      if (!accessToken) {
+        throw new Error('Not authenticated');
+      }
+
       const response = await fetch(
         `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/generate-impact-report`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`,
+            'Authorization': `Bearer ${accessToken}`,
           },
           body: JSON.stringify({
             student_id: profile!.id,
@@ -147,24 +158,29 @@ export default function DashboardScreen() {
       );
 
       if (!response.ok) {
+        const errorData = await response.text();
+        console.error('Report generation error:', errorData);
         throw new Error('Failed to generate report');
       }
 
-      const blob = await response.blob();
+      const htmlContent = await response.text();
+      const blob = new Blob([htmlContent], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `volunteer-impact-report-${new Date().toISOString().split('T')[0]}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
 
-      setSuccessMessage('Report downloaded successfully!');
-      setTimeout(() => setSuccessMessage(''), 3000);
+      const newWindow = window.open(url, '_blank');
+      if (newWindow) {
+        newWindow.onload = () => {
+          setTimeout(() => {
+            URL.revokeObjectURL(url);
+          }, 1000);
+        };
+      }
+
+      setSuccessMessage('Report opened in new tab - use Print to save as PDF');
+      setTimeout(() => setSuccessMessage(''), 5000);
     } catch (error) {
       console.error('Error downloading report:', error);
-      setErrorMessage('Failed to download report');
+      setErrorMessage('Failed to generate report');
       setTimeout(() => setErrorMessage(''), 3000);
     }
 
@@ -345,7 +361,9 @@ export default function DashboardScreen() {
                         { borderColor: getBadgeColor(badge.badge_type) },
                       ]}
                     >
-                      {getBadgeIcon(badge.icon, 32, getBadgeColor(badge.badge_type))}
+                      <View style={styles.silhouetteContainer}>
+                        {getBadgeIcon(badge.icon, 32, '#dee2e6')}
+                      </View>
                     </View>
                     <Text style={styles.badgeName}>{badge.name}</Text>
                     <Text style={styles.badgeDescription} numberOfLines={2}>
@@ -522,8 +540,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   badgeIconContainerInProgress: {
-    backgroundColor: 'transparent',
+    backgroundColor: '#f8f9fa',
     borderWidth: 2,
+  },
+  silhouetteContainer: {
+    opacity: 0.3,
   },
   badgeName: {
     fontSize: 13,
