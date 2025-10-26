@@ -78,20 +78,6 @@ export default function CompleteSessionScreen() {
       return;
     }
 
-    const { data: studentProfile } = await supabase
-      .from('student_profiles')
-      .select('total_hours')
-      .eq('id', session.student_id)
-      .maybeSingle();
-
-    const hoursToAdd = parseInt(actualDuration) / 60;
-    const newTotalHours = (studentProfile?.total_hours || 0) + hoursToAdd;
-
-    await supabase
-      .from('student_profiles')
-      .update({ total_hours: newTotalHours })
-      .eq('id', session.student_id);
-
     const { error: reviewError } = await supabase.from('reviews').insert({
       session_id: session.id,
       reviewer_id: profile!.id,
@@ -111,6 +97,7 @@ export default function CompleteSessionScreen() {
 
     setLoading(false);
 
+    const hoursToAdd = parseInt(actualDuration) / 60;
     setSuccessMessage(`Session completed! ${hoursToAdd.toFixed(2)} hours added to student's service record.`);
     setTimeout(() => {
       setSuccessMessage('');
