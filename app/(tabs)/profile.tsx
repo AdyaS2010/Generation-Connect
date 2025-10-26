@@ -172,7 +172,7 @@ export default function ProfileScreen() {
               ]}
             >
               <Text style={styles.roleBadgeText}>
-                {profile?.role === 'senior' ? 'Senior' : 'Student'}
+                {profile?.role === 'senior' ? 'Senior' : profile?.role === 'admin' ? 'Admin' : 'Student'}
               </Text>
             </View>
           </View>
