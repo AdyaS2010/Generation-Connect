@@ -11,7 +11,7 @@ import {
 import { useRouter, useRootNavigationState } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { LogOut, Edit2, Save, Clock, Star, Award, Upload, X, AlertCircle, CheckCircle, Bell, ChevronRight, Sparkles } from 'lucide-react-native';
+import { LogOut, Edit2, Save, Clock, Star, Award, Upload, X, AlertCircle, CheckCircle, Bell, ChevronRight, Sparkles, MessageCircle } from 'lucide-react-native';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -341,7 +341,7 @@ export default function ProfileScreen() {
 
         <View style={styles.card}>
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Notifications</Text>
+            <Text style={styles.sectionTitle}>Settings</Text>
 
             <Pressable
               style={styles.settingsRow}
@@ -350,6 +350,17 @@ export default function ProfileScreen() {
               <View style={styles.settingsRowLeft}>
                 <Bell size={20} color="#2563eb" />
                 <Text style={styles.settingsRowText}>Reminder Settings</Text>
+              </View>
+              <ChevronRight size={20} color="#6c757d" />
+            </Pressable>
+
+            <Pressable
+              style={styles.settingsRow}
+              onPress={() => router.push('/support/create')}
+            >
+              <View style={styles.settingsRowLeft}>
+                <MessageCircle size={20} color="#2563eb" />
+                <Text style={styles.settingsRowText}>Submit Support Ticket</Text>
               </View>
               <ChevronRight size={20} color="#6c757d" />
             </Pressable>
