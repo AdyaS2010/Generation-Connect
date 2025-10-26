@@ -27,16 +27,21 @@ Deno.serve(async (req: Request) => {
       { student_user_id: student_id }
     );
 
-    if (statsError) throw statsError;
+    if (statsError) {
+      console.error('Error fetching stats:', statsError);
+      throw statsError;
+    }
 
     // Fetch earned badges
     const { data: badgesData, error: badgesError } = await supabase
       .from('student_badges')
       .select('*, badges(*)')
-      .eq('student_id', student_id)
-      .gte('progress', supabase.from('badges').select('requirement_value'));
+      .eq('student_id', student_id);
 
-    if (badgesError) throw badgesError;
+    if (badgesError) {
+      console.error('Error fetching badges:', badgesError);
+      throw badgesError;
+    }
 
     const earnedBadges = badgesData
       ?.filter((sb: any) => sb.progress >= sb.badges.requirement_value)
@@ -46,8 +51,6 @@ Deno.serve(async (req: Request) => {
     const html = generateReportHTML(student_name, stats, earnedBadges);
 
     // Return HTML as PDF-ready content
-    // In production, you'd use a proper PDF generation library
-    // For now, returning HTML that can be printed as PDF
     return new Response(html, {
       headers: {
         ...corsHeaders,
@@ -58,7 +61,7 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     console.error('Error generating impact report:', error);
     return new Response(
-      JSON.stringify({ error: 'Failed to generate report' }),
+      JSON.stringify({ error: 'Failed to generate report', details: error.message }),
       {
         status: 500,
         headers: {
@@ -313,7 +316,6 @@ function generateReportHTML(
   </div>
 
   <script>
-    // Auto-print when loaded (for PDF generation)
     window.onload = function() {
       setTimeout(function() {
         window.print();

@@ -85,10 +85,23 @@ export default function DashboardScreen() {
       if (statsError) throw statsError;
       setStats(statsData);
 
-      const [{ data: allBadgesData }, { data: studentBadgesData }] = await Promise.all([
+      const [badgesResult, studentBadgesResult] = await Promise.all([
         supabase.from('badges').select('*'),
         supabase.from('student_badges').select('*').eq('student_id', profile!.id),
       ]);
+
+      if (badgesResult.error) {
+        console.error('Error fetching badges:', badgesResult.error);
+        throw badgesResult.error;
+      }
+
+      if (studentBadgesResult.error) {
+        console.error('Error fetching student badges:', studentBadgesResult.error);
+        throw studentBadgesResult.error;
+      }
+
+      const allBadgesData = badgesResult.data;
+      const studentBadgesData = studentBadgesResult.data;
 
       const earned: Badge[] = [];
       const inProgress: Badge[] = [];
