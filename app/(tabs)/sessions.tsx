@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/database';
-import { Calendar, Video, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, X } from 'lucide-react-native';
+import { Calendar, Video, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, X, List } from 'lucide-react-native';
 
 type Session = Database['public']['Tables']['sessions']['Row'];
 
@@ -25,6 +25,7 @@ export default function SessionsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar');
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedDaySessions, setSelectedDaySessions] = useState<Session[]>([]);
@@ -128,6 +129,75 @@ export default function SessionsScreen() {
       setSelectedDate(date);
       setSelectedDaySessions(daySessions);
     }
+  };
+
+  const renderSession = ({ item }: { item: Session }) => {
+    const isUpcoming = new Date(item.scheduled_time) > new Date();
+    const isPast = new Date(item.scheduled_time) < new Date();
+    const canComplete = profile?.role === 'senior' && item.status === 'completed' && !item.senior_signed_off;
+
+    return (
+      <View style={styles.sessionCard}>
+        <View style={styles.sessionHeader}>
+          <View style={styles.dateContainer}>
+            <Calendar size={20} color="#2563eb" />
+            <Text style={styles.dateText}>
+              {new Date(item.scheduled_time).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+              })}
+            </Text>
+            <Text style={styles.timeText}>
+              {new Date(item.scheduled_time).toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+              })}
+            </Text>
+          </View>
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+            <Text style={styles.statusText}>{getStatusLabel(item.status)}</Text>
+          </View>
+        </View>
+
+        <Text style={styles.durationText}>{item.duration_minutes} minutes</Text>
+
+        {item.notes && (
+          <Text style={styles.notesText} numberOfLines={2}>
+            {item.notes}
+          </Text>
+        )}
+
+        <View style={styles.sessionActions}>
+          {item.status === 'scheduled' && isUpcoming && (
+            <Pressable
+              style={styles.joinButton}
+              onPress={() => handleJoinMeeting(item.meeting_link || '')}
+            >
+              <Video size={18} color="#ffffff" style={styles.buttonIcon} />
+              <Text style={styles.joinButtonText}>Join Meeting</Text>
+            </Pressable>
+          )}
+
+          {canComplete && (
+            <Pressable
+              style={styles.completeButton}
+              onPress={() => handleCompleteSession(item.id)}
+            >
+              <CheckCircle size={18} color="#ffffff" style={styles.buttonIcon} />
+              <Text style={styles.completeButtonText}>Sign Off</Text>
+            </Pressable>
+          )}
+        </View>
+
+        {item.senior_signed_off && (
+          <View style={styles.signOffBadge}>
+            <CheckCircle size={16} color="#10b981" />
+            <Text style={styles.signOffText}>Signed off by senior</Text>
+          </View>
+        )}
+      </View>
+    );
   };
 
   const renderCalendarView = () => {
@@ -275,6 +345,20 @@ export default function SessionsScreen() {
       ) : null}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Sessions</Text>
+        <View style={styles.toggleContainer}>
+          <Pressable
+            style={[styles.toggleButton, viewMode === 'list' && styles.toggleButtonActive]}
+            onPress={() => setViewMode('list')}
+          >
+            <List size={20} color={viewMode === 'list' ? '#ffffff' : '#6c757d'} />
+          </Pressable>
+          <Pressable
+            style={[styles.toggleButton, viewMode === 'calendar' && styles.toggleButtonActive]}
+            onPress={() => setViewMode('calendar')}
+          >
+            <Calendar size={20} color={viewMode === 'calendar' ? '#ffffff' : '#6c757d'} />
+          </Pressable>
+        </View>
       </View>
 
       {sessions.length === 0 ? (
@@ -287,8 +371,16 @@ export default function SessionsScreen() {
               : 'Claim a request to schedule your first session'}
           </Text>
         </View>
-      ) : (
+      ) : viewMode === 'calendar' ? (
         renderCalendarView()
+      ) : (
+        <FlatList
+          data={sessions}
+          renderItem={renderSession}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        />
       )}
 
       <Modal
@@ -386,6 +478,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     padding: 20,
     paddingTop: 60,
     backgroundColor: '#ffffff',
@@ -396,6 +491,22 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
     color: '#1a1a1a',
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 8,
+    padding: 4,
+    gap: 4,
+  },
+  toggleButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    backgroundColor: 'transparent',
+  },
+  toggleButtonActive: {
+    backgroundColor: '#2563eb',
   },
   listContent: {
     padding: 16,
