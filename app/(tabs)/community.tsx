@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, Pressable, RefreshControl } from 'rea
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { Plus, MessageCircle, Heart, Sparkles, HelpCircle, BookOpen, Clock, AlertCircle } from 'lucide-react-native';
+import { Plus, MessageCircle, Heart, Sparkles, HelpCircle, BookOpen, Clock, AlertCircle, Users } from 'lucide-react-native';
 
 interface CommunityPost {
   id: string;
