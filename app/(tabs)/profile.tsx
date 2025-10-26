@@ -11,7 +11,7 @@ import {
 import { useRouter, useRootNavigationState } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { LogOut, Edit2, Save, Clock, Star, Award, Upload, X, AlertCircle, CheckCircle, Bell, ChevronRight } from 'lucide-react-native';
+import { LogOut, Edit2, Save, Clock, Star, Award, Upload, X, AlertCircle, CheckCircle, Bell, ChevronRight, Sparkles } from 'lucide-react-native';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -224,15 +224,35 @@ export default function ProfileScreen() {
 
             {profile?.role === 'student' && (
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Skills (comma separated)</Text>
-                <TextInput
-                  style={[styles.input, !editing && styles.inputDisabled]}
-                  value={skills}
-                  onChangeText={setSkills}
-                  placeholder="e.g., Social Media, Email, Video Calls"
-                  multiline
-                  editable={editing}
-                />
+                <View style={styles.labelRow}>
+                  <Text style={styles.label}>My Skills</Text>
+                  <Pressable
+                    style={styles.manageSkillsButton}
+                    onPress={() => router.push('/profile/skills')}
+                  >
+                    <Sparkles size={16} color="#2563eb" />
+                    <Text style={styles.manageSkillsText}>Manage</Text>
+                  </Pressable>
+                </View>
+                {studentProfile?.skills && studentProfile.skills.length > 0 ? (
+                  <View style={styles.skillsDisplay}>
+                    {studentProfile.skills.map((skill: string, idx: number) => (
+                      <View key={idx} style={styles.skillTag}>
+                        <Text style={styles.skillTagText}>{skill}</Text>
+                      </View>
+                    ))}
+                  </View>
+                ) : (
+                  <Pressable
+                    style={styles.addSkillsPrompt}
+                    onPress={() => router.push('/profile/skills')}
+                  >
+                    <Text style={styles.addSkillsPromptText}>
+                      Add your skills to get matched with relevant requests
+                    </Text>
+                    <ChevronRight size={20} color="#2563eb" />
+                  </Pressable>
+                )}
               </View>
             )}
           </View>
@@ -622,6 +642,60 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1a1a1a',
     fontWeight: '500',
+  },
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  manageSkillsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#eff6ff',
+  },
+  manageSkillsText: {
+    fontSize: 13,
+    color: '#2563eb',
+    fontWeight: '600',
+  },
+  skillsDisplay: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  skillTag: {
+    backgroundColor: '#eff6ff',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+  },
+  skillTagText: {
+    fontSize: 13,
+    color: '#2563eb',
+    fontWeight: '600',
+  },
+  addSkillsPrompt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f8f9fa',
+    padding: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#dee2e6',
+  },
+  addSkillsPromptText: {
+    fontSize: 14,
+    color: '#2563eb',
+    flex: 1,
+    marginRight: 8,
   },
   modalOverlay: {
     flex: 1,
