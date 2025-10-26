@@ -14,7 +14,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/database';
-import { Calendar, Video, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, X, List } from 'lucide-react-native';
+import { Calendar, Video, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, X, List, Download } from 'lucide-react-native';
 
 type Session = Database['public']['Tables']['sessions']['Row'];
 
@@ -92,6 +92,39 @@ export default function SessionsScreen() {
 
   const getStatusLabel = (status: string) => {
     return status.replace('_', ' ').toUpperCase();
+  };
+
+  const handleDownloadCalendar = async (sessionId: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const apiUrl = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/generate-calendar?sessionId=${sessionId}`;
+
+      const response = await fetch(apiUrl, {
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate calendar file');
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `session-${sessionId}.ics`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading calendar:', error);
+      setErrorMessage('Failed to download calendar file');
+      setTimeout(() => setErrorMessage(''), 3000);
+    }
   };
 
   const getDaysInMonth = (date: Date) => {
@@ -442,6 +475,15 @@ export default function SessionsScreen() {
                     {session.notes && (
                       <Text style={styles.modalNotes}>{session.notes}</Text>
                     )}
+
+                    <Pressable
+                      style={styles.calendarSyncButton}
+                      onPress={() => handleDownloadCalendar(session.id)}
+                    >
+                      <Download size={16} color="#2563eb" />
+                      <Text style={styles.calendarSyncText}>Add to Calendar</Text>
+                    </Pressable>
+
                     <View style={styles.modalActions}>
                       {session.status === 'scheduled' && new Date(session.scheduled_time) > new Date() && (
                         <Pressable
@@ -859,6 +901,24 @@ const styles = StyleSheet.create({
     color: '#6c757d',
     lineHeight: 20,
     marginBottom: 12,
+  },
+  calendarSyncButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: '#eff6ff',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#2563eb',
+    marginBottom: 12,
+  },
+  calendarSyncText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2563eb',
   },
   modalActions: {
     flexDirection: 'row',

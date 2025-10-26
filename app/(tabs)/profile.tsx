@@ -11,7 +11,7 @@ import {
 import { useRouter, useRootNavigationState } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { LogOut, Edit2, Save, Clock, Star, Award, Upload, X, AlertCircle, CheckCircle } from 'lucide-react-native';
+import { LogOut, Edit2, Save, Clock, Star, Award, Upload, X, AlertCircle, CheckCircle, Bell, ChevronRight } from 'lucide-react-native';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -319,6 +319,23 @@ export default function ProfileScreen() {
           )}
         </View>
 
+        <View style={styles.card}>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Notifications</Text>
+
+            <Pressable
+              style={styles.settingsRow}
+              onPress={() => router.push('/reminder-settings')}
+            >
+              <View style={styles.settingsRowLeft}>
+                <Bell size={20} color="#2563eb" />
+                <Text style={styles.settingsRowText}>Reminder Settings</Text>
+              </View>
+              <ChevronRight size={20} color="#6c757d" />
+            </Pressable>
+          </View>
+        </View>
+
         <Pressable
           style={styles.signOutButtonFull}
           onPress={() => setShowSignOutModal(true)}
@@ -588,6 +605,23 @@ const styles = StyleSheet.create({
     color: '#2563eb',
     fontSize: 14,
     fontWeight: '600',
+  },
+  settingsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+  },
+  settingsRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  settingsRowText: {
+    fontSize: 16,
+    color: '#1a1a1a',
+    fontWeight: '500',
   },
   modalOverlay: {
     flex: 1,
