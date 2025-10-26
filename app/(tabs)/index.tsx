@@ -147,9 +147,11 @@ export default function HomeScreen() {
             </View>
           )}
         </View>
-        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
-          <Text style={styles.statusText}>{getStatusLabel(item.status)}</Text>
-        </View>
+        {!(profile?.role === 'student' && viewMode === 'suggested') && (
+          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
+            <Text style={styles.statusText}>{getStatusLabel(item.status)}</Text>
+          </View>
+        )}
       </View>
       <Text style={styles.requestDescription} numberOfLines={2}>
         {item.description}
