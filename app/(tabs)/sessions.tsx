@@ -12,7 +12,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/database';
-import { Calendar, Video, CheckCircle, AlertCircle } from 'lucide-react-native';
+import { Calendar, Video, CheckCircle, AlertCircle, List } from 'lucide-react-native';
 
 type Session = Database['public']['Tables']['sessions']['Row'];
 
@@ -23,6 +23,7 @@ export default function SessionsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
 
   useEffect(() => {
     fetchSessions();
@@ -86,6 +87,91 @@ export default function SessionsScreen() {
 
   const getStatusLabel = (status: string) => {
     return status.replace('_', ' ').toUpperCase();
+  };
+
+  const groupSessionsByDate = () => {
+    const grouped: { [key: string]: Session[] } = {};
+    sessions.forEach(session => {
+      const dateKey = new Date(session.scheduled_time).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = [];
+      }
+      grouped[dateKey].push(session);
+    });
+    return Object.entries(grouped).sort((a, b) =>
+      new Date(a[1][0].scheduled_time).getTime() - new Date(b[1][0].scheduled_time).getTime()
+    );
+  };
+
+  const renderCalendarView = () => {
+    const groupedSessions = groupSessionsByDate();
+
+    return (
+      <FlatList
+        data={groupedSessions}
+        renderItem={({ item: [date, dateSessions] }) => (
+          <View style={styles.dateGroup}>
+            <View style={styles.dateHeader}>
+              <Text style={styles.dateHeaderText}>{date}</Text>
+              <Text style={styles.dateHeaderCount}>
+                {dateSessions.length} {dateSessions.length === 1 ? 'session' : 'sessions'}
+              </Text>
+            </View>
+            {dateSessions.map((session) => (
+              <View key={session.id} style={styles.calendarSessionCard}>
+                <View style={styles.timeColumn}>
+                  <Text style={styles.calendarTime}>
+                    {new Date(session.scheduled_time).toLocaleTimeString('en-US', {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    })}
+                  </Text>
+                  <Text style={styles.calendarDuration}>{session.duration_minutes} min</Text>
+                </View>
+                <View style={styles.calendarSessionContent}>
+                  <View style={styles.calendarSessionHeader}>
+                    <View style={[styles.statusDot, { backgroundColor: getStatusColor(session.status) }]} />
+                    <Text style={styles.calendarStatusText}>{getStatusLabel(session.status)}</Text>
+                  </View>
+                  {session.notes && (
+                    <Text style={styles.calendarNotes} numberOfLines={2}>
+                      {session.notes}
+                    </Text>
+                  )}
+                  <View style={styles.calendarActions}>
+                    {session.status === 'scheduled' && new Date(session.scheduled_time) > new Date() && (
+                      <Pressable
+                        style={styles.calendarJoinButton}
+                        onPress={() => handleJoinMeeting(session.meeting_link || '')}
+                      >
+                        <Video size={16} color="#2563eb" />
+                        <Text style={styles.calendarJoinText}>Join</Text>
+                      </Pressable>
+                    )}
+                    {profile?.role === 'senior' && session.status === 'completed' && !session.senior_signed_off && (
+                      <Pressable
+                        style={styles.calendarSignOffButton}
+                        onPress={() => handleCompleteSession(session.id)}
+                      >
+                        <CheckCircle size={16} color="#10b981" />
+                        <Text style={styles.calendarSignOffText}>Sign Off</Text>
+                      </Pressable>
+                    )}
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+        keyExtractor={([date]) => date}
+        contentContainerStyle={styles.listContent}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      />
+    );
   };
 
   const renderSession = ({ item }: { item: Session }) => {
@@ -175,6 +261,20 @@ export default function SessionsScreen() {
       ) : null}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>My Sessions</Text>
+        <View style={styles.toggleContainer}>
+          <Pressable
+            style={[styles.toggleButton, viewMode === 'list' && styles.toggleButtonActive]}
+            onPress={() => setViewMode('list')}
+          >
+            <List size={20} color={viewMode === 'list' ? '#ffffff' : '#6c757d'} />
+          </Pressable>
+          <Pressable
+            style={[styles.toggleButton, viewMode === 'calendar' && styles.toggleButtonActive]}
+            onPress={() => setViewMode('calendar')}
+          >
+            <Calendar size={20} color={viewMode === 'calendar' ? '#ffffff' : '#6c757d'} />
+          </Pressable>
+        </View>
       </View>
 
       {sessions.length === 0 ? (
@@ -187,6 +287,8 @@ export default function SessionsScreen() {
               : 'Claim a request to schedule your first session'}
           </Text>
         </View>
+      ) : viewMode === 'calendar' ? (
+        renderCalendarView()
       ) : (
         <FlatList
           data={sessions}
@@ -212,6 +314,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     padding: 20,
     paddingTop: 60,
     backgroundColor: '#ffffff',
@@ -222,6 +327,22 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: '700',
     color: '#1a1a1a',
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#f1f5f9',
+    borderRadius: 8,
+    padding: 4,
+    gap: 4,
+  },
+  toggleButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    backgroundColor: 'transparent',
+  },
+  toggleButtonActive: {
+    backgroundColor: '#2563eb',
   },
   listContent: {
     padding: 16,
@@ -348,6 +469,115 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 18,
     color: '#6c757d',
+  },
+  dateGroup: {
+    marginBottom: 24,
+  },
+  dateHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#f1f5f9',
+    borderBottomWidth: 2,
+    borderBottomColor: '#2563eb',
+  },
+  dateHeaderText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1a1a1a',
+  },
+  dateHeaderCount: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6c757d',
+  },
+  calendarSessionCard: {
+    flexDirection: 'row',
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    padding: 16,
+  },
+  timeColumn: {
+    width: 80,
+    paddingRight: 16,
+    borderRightWidth: 2,
+    borderRightColor: '#e5e7eb',
+  },
+  calendarTime: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
+  calendarDuration: {
+    fontSize: 13,
+    color: '#6c757d',
+  },
+  calendarSessionContent: {
+    flex: 1,
+    paddingLeft: 16,
+  },
+  calendarSessionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 8,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  calendarStatusText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#6c757d',
+    textTransform: 'uppercase',
+  },
+  calendarNotes: {
+    fontSize: 14,
+    color: '#6c757d',
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  calendarActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  calendarJoinButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#eff6ff',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#2563eb',
+  },
+  calendarJoinText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2563eb',
+  },
+  calendarSignOffButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#f0fdf4',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#10b981',
+  },
+  calendarSignOffText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#10b981',
   },
   errorBanner: {
     backgroundColor: '#fee2e2',
