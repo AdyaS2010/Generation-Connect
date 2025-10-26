@@ -113,7 +113,8 @@ export default function HomeScreen() {
     }
   };
 
-  const getStatusLabel = (status: string) => {
+  const getStatusLabel = (status?: string) => {
+    if (!status) return 'OPEN';
     return status.replace('_', ' ').toUpperCase();
   };
 
