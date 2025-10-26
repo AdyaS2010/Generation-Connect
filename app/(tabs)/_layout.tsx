@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Home, MessageSquare, Calendar, User } from 'lucide-react-native';
+import { Home, MessageSquare, Calendar, User, Users } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function TabLayout() {
@@ -32,6 +32,15 @@ export default function TabLayout() {
           tabBarIcon: ({ size, color }) => <Home size={size} color={color} />,
         }}
       />
+      {profile?.role === 'senior' && (
+        <Tabs.Screen
+          name="community"
+          options={{
+            title: 'Community',
+            tabBarIcon: ({ size, color }) => <Users size={size} color={color} />,
+          }}
+        />
+      )}
       <Tabs.Screen
         name="sessions"
         options={{
