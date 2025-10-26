@@ -141,7 +141,7 @@ export default function ReminderSettingsScreen() {
         <Pressable onPress={() => router.back()} style={styles.backButton}>
           <ArrowLeft size={24} color="#2563eb" />
         </Pressable>
-        <Text style={styles.headerTitle}>Notification Reminders</Text>
+        <Text style={styles.headerTitle}>Alert Settings</Text>
       </View>
 
       <ScrollView style={styles.content}>
