@@ -44,6 +44,15 @@ export default function TabLayout() {
           }}
         />
       )}
+      {profile?.role === 'senior' && (
+        <Tabs.Screen
+          name="community"
+          options={{
+            title: 'Community',
+            tabBarIcon: ({ size, color }) => <Users size={size} color={color} />,
+          }}
+        />
+      )}
       <Tabs.Screen
         name="sessions"
         options={{
@@ -63,12 +72,6 @@ export default function TabLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ size, color }) => <User size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="community"
-        options={{
-          href: null,
         }}
       />
     </Tabs>
