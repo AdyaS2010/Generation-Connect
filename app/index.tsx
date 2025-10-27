@@ -110,7 +110,7 @@ export default function WelcomeScreen() {
                 </View>
                 <Text style={styles.cardTitle}>I'm a Student Volunteer</Text>
                 <Text style={styles.cardDescription}>
-                  Earn hours, make impact, build connections
+                  Make impact, earn hours, build connections
                 </Text>
                 <View style={styles.cardButton}>
                   <Text style={styles.cardButtonText}>Start Helping</Text>
