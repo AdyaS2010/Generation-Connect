@@ -16,7 +16,9 @@ import { supabase } from '@/lib/supabase';
 import { Database } from '@/types/database';
 import { Calendar, Video, CheckCircle, AlertCircle, ChevronLeft, ChevronRight, X, List, Download } from 'lucide-react-native';
 
-type Session = Database['public']['Tables']['sessions']['Row'];
+type Session = Database['public']['Tables']['sessions']['Row'] & {
+  other_person_name?: string;
+};
 
 export default function SessionsScreen() {
   const { profile, user } = useAuth();
@@ -48,9 +50,29 @@ export default function SessionsScreen() {
       console.error('Error fetching sessions:', error);
       setErrorMessage('Failed to load sessions');
       setTimeout(() => setErrorMessage(''), 3000);
-    } else {
-      setSessions(data || []);
+      setLoading(false);
+      setRefreshing(false);
+      return;
     }
+
+    const sessionsWithNames = await Promise.all(
+      (data || []).map(async (session) => {
+        const otherUserId = session.senior_id === user.id ? session.student_id : session.senior_id;
+
+        const { data: otherProfile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', otherUserId)
+          .maybeSingle();
+
+        return {
+          ...session,
+          other_person_name: otherProfile?.full_name || 'Unknown',
+        };
+      })
+    );
+
+    setSessions(sessionsWithNames);
     setLoading(false);
     setRefreshing(false);
   };
@@ -214,6 +236,9 @@ export default function SessionsScreen() {
                       <View style={[styles.timelineStatusDot, { backgroundColor: getStatusColor(session.status) }]} />
                       <Text style={styles.timelineStatusText}>{getStatusLabel(session.status)}</Text>
                     </View>
+                    <Text style={styles.timelineParticipant}>
+                      With {session.other_person_name}
+                    </Text>
                     {session.notes && (
                       <Text style={styles.timelineNotes} numberOfLines={2}>
                         {session.notes}
@@ -471,6 +496,9 @@ export default function SessionsScreen() {
                         <Text style={styles.modalStatusText}>{getStatusLabel(session.status)}</Text>
                       </View>
                     </View>
+                    <Text style={styles.modalParticipant}>
+                      With {session.other_person_name}
+                    </Text>
                     <Text style={styles.modalDuration}>{session.duration_minutes} minutes</Text>
                     {session.notes && (
                       <Text style={styles.modalNotes}>{session.notes}</Text>
@@ -638,6 +666,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#6c757d',
     textTransform: 'uppercase',
+  },
+  timelineParticipant: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginTop: 8,
   },
   timelineNotes: {
     fontSize: 14,
@@ -890,6 +924,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#ffffff',
+  },
+  modalParticipant: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginBottom: 8,
   },
   modalDuration: {
     fontSize: 14,
