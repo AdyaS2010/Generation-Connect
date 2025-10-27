@@ -132,7 +132,7 @@ export default function WelcomeScreen() {
                 </View>
                 <Text style={styles.cardTitle}>I'm a Senior</Text>
                 <Text style={styles.cardDescription}>
-                  Get friendly tech support at your own pace. We're here to help you feel confident with technology.
+                  Get friendly tech support at your own pace- We're here to help you feel confident with technology 💖
                 </Text>
                 <View style={styles.cardButton}>
                   <Text style={styles.cardButtonText}>Get Started</Text>
@@ -151,7 +151,7 @@ export default function WelcomeScreen() {
                 </View>
                 <Text style={styles.cardTitle}>I'm a Student Volunteer</Text>
                 <Text style={styles.cardDescription}>
-                  Make a real difference while earning service hours. Share your skills and build meaningful connections.
+                  Make a real difference while earning service hours: share your skills and build meaningful connections!
                 </Text>
                 <View style={styles.cardButton}>
                   <Text style={styles.cardButtonText}>Start Helping</Text>
