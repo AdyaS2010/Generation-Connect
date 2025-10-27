@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEffect } from 'react';
-import { Heart, Sparkles, Users } from 'lucide-react-native';
+import { Heart, Sparkles, Users, Smile, GraduationCap, HandHeart, Stars } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function WelcomeScreen() {
@@ -45,11 +45,15 @@ export default function WelcomeScreen() {
           <View style={styles.heroSection}>
             <View style={styles.illustrationContainer}>
               <View style={styles.illustration}>
-                <Text style={styles.seniorEmoji}>👴</Text>
+                <View style={styles.iconCircle}>
+                  <Smile size={48} color="#f59e0b" strokeWidth={2.5} />
+                </View>
                 <View style={styles.connectLine}>
                   <Heart size={24} color="#f59e0b" />
                 </View>
-                <Text style={styles.studentEmoji}>👩‍🎓</Text>
+                <View style={styles.iconCircle}>
+                  <GraduationCap size={48} color="#dc2626" strokeWidth={2.5} />
+                </View>
               </View>
             </View>
 
@@ -80,8 +84,10 @@ export default function WelcomeScreen() {
                 onPress={() => router.push('/auth/senior-signup')}
               >
                 <View style={styles.cardHeader}>
-                  <Text style={styles.cardEmoji}>👴</Text>
-                  <Sparkles size={20} color="#92400e" />
+                  <View style={styles.cardIconCircle}>
+                    <Smile size={36} color="#f59e0b" strokeWidth={2.5} />
+                  </View>
+                  <Sparkles size={24} color="#f59e0b" />
                 </View>
                 <Text style={styles.cardTitle}>I'm a Senior</Text>
                 <Text style={styles.cardDescription}>
@@ -97,8 +103,10 @@ export default function WelcomeScreen() {
                 onPress={() => router.push('/auth/student-signup')}
               >
                 <View style={styles.cardHeader}>
-                  <Text style={styles.cardEmoji}>👩‍🎓</Text>
-                  <Heart size={20} color="#dc2626" />
+                  <View style={styles.cardIconCircle}>
+                    <GraduationCap size={36} color="#dc2626" strokeWidth={2.5} />
+                  </View>
+                  <HandHeart size={24} color="#dc2626" />
                 </View>
                 <Text style={styles.cardTitle}>I'm a Student Volunteer</Text>
                 <Text style={styles.cardDescription}>
@@ -144,17 +152,19 @@ const styles = StyleSheet.create({
   impactBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
     borderRadius: 30,
-    gap: 8,
+    gap: 10,
     marginBottom: 30,
-    shadowColor: '#000',
+    shadowColor: '#f59e0b',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.2)',
   },
   impactText: {
     fontSize: 14,
@@ -174,19 +184,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 20,
   },
-  seniorEmoji: {
-    fontSize: 64,
-  },
-  studentEmoji: {
-    fontSize: 64,
+  iconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 3,
+    borderColor: 'rgba(245, 158, 11, 0.3)',
   },
   connectLine: {
     width: 40,
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
     borderRadius: 20,
+    borderWidth: 2,
+    borderColor: 'rgba(245, 158, 11, 0.4)',
   },
   brandName: {
     fontSize: 36,
@@ -216,15 +237,15 @@ const styles = StyleSheet.create({
   },
   signInButton: {
     backgroundColor: '#78350f',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
+    paddingVertical: 18,
+    paddingHorizontal: 36,
     borderRadius: 16,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: '#78350f',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 5,
   },
   signInButtonText: {
     color: '#ffffff',
@@ -252,25 +273,25 @@ const styles = StyleSheet.create({
   },
   seniorCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 5,
+    borderRadius: 24,
+    padding: 28,
+    shadowColor: '#f59e0b',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 6,
     borderWidth: 3,
     borderColor: '#fed7aa',
   },
   studentCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 5,
+    borderRadius: 24,
+    padding: 28,
+    shadowColor: '#dc2626',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 6,
     borderWidth: 3,
     borderColor: '#fecaca',
   },
@@ -278,10 +299,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  cardEmoji: {
-    fontSize: 40,
+  cardIconCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(254, 243, 199, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   cardTitle: {
     fontSize: 24,
