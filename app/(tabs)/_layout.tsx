@@ -35,24 +35,22 @@ export default function TabLayout() {
           tabBarIcon: ({ size, color }) => <Home size={size} color={color} />,
         }}
       />
-      {profile?.role === 'student' && (
-        <Tabs.Screen
-          name="dashboard"
-          options={{
-            title: 'Dashboard',
-            tabBarIcon: ({ size, color }) => <BarChart3 size={size} color={color} />,
-          }}
-        />
-      )}
-      {profile?.role === 'senior' && (
-        <Tabs.Screen
-          name="community"
-          options={{
-            title: 'Community',
-            tabBarIcon: ({ size, color }) => <Users size={size} color={color} />,
-          }}
-        />
-      )}
+      <Tabs.Screen
+        name="dashboard"
+        options={{
+          href: profile?.role === 'student' ? undefined : null,
+          title: 'Dashboard',
+          tabBarIcon: ({ size, color }) => <BarChart3 size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="community"
+        options={{
+          href: profile?.role === 'senior' ? undefined : null,
+          title: 'Community',
+          tabBarIcon: ({ size, color }) => <Users size={size} color={color} />,
+        }}
+      />
       <Tabs.Screen
         name="sessions"
         options={{
