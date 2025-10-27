@@ -91,7 +91,7 @@ export default function WelcomeScreen() {
                 </View>
                 <Text style={styles.cardTitle}>I'm a Senior</Text>
                 <Text style={styles.cardDescription}>
-                  Get help with tech, one step at a time :D
+                  Get help with tech, one step at a time! <!-- :D !> 
                 </Text>
                 <View style={styles.cardButton}>
                   <Text style={styles.cardButtonText}>Get Started</Text>
@@ -110,7 +110,7 @@ export default function WelcomeScreen() {
                 </View>
                 <Text style={styles.cardTitle}>I'm a Student Volunteer</Text>
                 <Text style={styles.cardDescription}>
-                  Earn hours, make impact, build connection
+                  Earn hours, make impact, build connections
                 </Text>
                 <View style={styles.cardButton}>
                   <Text style={styles.cardButtonText}>Start Helping</Text>
