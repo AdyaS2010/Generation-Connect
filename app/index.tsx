@@ -1,13 +1,17 @@
-import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Heart, Sparkles, Users, Smile, GraduationCap, HandHeart, Stars } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function WelcomeScreen() {
   const router = useRouter();
   const { user, profile, loading } = useAuth();
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.95)).current;
+  const floatAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (!loading && user && profile) {
@@ -18,6 +22,37 @@ export default function WelcomeScreen() {
       }
     }
   }, [user, profile, loading]);
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(floatAnim, {
+          toValue: -8,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(floatAnim, {
+          toValue: 0,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
 
   if (loading) {
     return (
@@ -35,12 +70,12 @@ export default function WelcomeScreen() {
         end={{ x: 1, y: 1 }}
         style={styles.gradientBackground}
       >
-        <View style={styles.container}>
-          <View style={styles.impactBanner}>
-            <Users size={16} color="#92400e" />
-            <Text style={styles.impactText}>500+ sessions completed</Text>
+        <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
+          <Animated.View style={[styles.impactBanner, { transform: [{ translateY: floatAnim }] }]}>
+            <Sparkles size={16} color="#f59e0b" />
+            <Text style={styles.impactText}>500+ connections made with care</Text>
             <Heart size={16} color="#dc2626" />
-          </View>
+          </Animated.View>
 
           <View style={styles.heroSection}>
             <View style={styles.illustrationContainer}>
@@ -55,12 +90,18 @@ export default function WelcomeScreen() {
                   <GraduationCap size={48} color="#dc2626" strokeWidth={2.5} />
                 </View>
               </View>
+              <View style={styles.confettiContainer}>
+                <Sparkles size={20} color="#f59e0b" style={styles.confetti1} />
+                <Stars size={18} color="#dc2626" style={styles.confetti2} />
+                <Sparkles size={16} color="#fbbf24" style={styles.confetti3} />
+                <Stars size={20} color="#f59e0b" style={styles.confetti4} />
+              </View>
             </View>
 
             <Text style={styles.brandName}>Generation Connect</Text>
-            <Text style={styles.tagline}>Tech help with heart</Text>
+            <Text style={styles.tagline}>Learning together, growing together</Text>
             <Text style={styles.subtitle}>
-              Where wisdom meets curiosity
+              Bridging generations through technology and kindness
             </Text>
           </View>
 
@@ -91,7 +132,7 @@ export default function WelcomeScreen() {
                 </View>
                 <Text style={styles.cardTitle}>I'm a Senior</Text>
                 <Text style={styles.cardDescription}>
-                  Get help with tech, one step at a time! /** :D **/
+                  Get friendly tech support at your own pace. We're here to help you feel confident with technology.
                 </Text>
                 <View style={styles.cardButton}>
                   <Text style={styles.cardButtonText}>Get Started</Text>
@@ -110,7 +151,7 @@ export default function WelcomeScreen() {
                 </View>
                 <Text style={styles.cardTitle}>I'm a Student Volunteer</Text>
                 <Text style={styles.cardDescription}>
-                  Make impact, earn hours, build connections
+                  Make a real difference while earning service hours. Share your skills and build meaningful connections.
                 </Text>
                 <View style={styles.cardButton}>
                   <Text style={styles.cardButtonText}>Start Helping</Text>
@@ -124,7 +165,7 @@ export default function WelcomeScreen() {
               Building bridges across generations
             </Text>
           </View>
-        </View>
+        </Animated.View>
       </LinearGradient>
     </ScrollView>
   );
@@ -178,11 +219,44 @@ const styles = StyleSheet.create({
   },
   illustrationContainer: {
     marginBottom: 24,
+    position: 'relative',
   },
   illustration: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 20,
+  },
+  confettiContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    pointerEvents: 'none',
+  },
+  confetti1: {
+    position: 'absolute',
+    top: -10,
+    left: 10,
+    opacity: 0.7,
+  },
+  confetti2: {
+    position: 'absolute',
+    top: 5,
+    right: 15,
+    opacity: 0.6,
+  },
+  confetti3: {
+    position: 'absolute',
+    bottom: 10,
+    left: 25,
+    opacity: 0.8,
+  },
+  confetti4: {
+    position: 'absolute',
+    bottom: 0,
+    right: 20,
+    opacity: 0.7,
   },
   iconCircle: {
     width: 80,
