@@ -10,7 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
-import { MessageSquare, AlertCircle, Users, Plus, MessageCircle, Heart, Sparkles, HelpCircle, BookOpen, Clock } from 'lucide-react-native';
+import { MessageSquare, CircleAlert as AlertCircle, Users, Plus, MessageCircle, Heart, Sparkles, Circle as HelpCircle, BookOpen, Clock } from 'lucide-react-native';
 
 type Conversation = {
   requestId: string;
