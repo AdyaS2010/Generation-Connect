@@ -76,11 +76,15 @@ export default function MessagesScreen() {
     const conversationPromises = (requests || []).map(async (request: any) => {
       const otherUserId = request.senior_id === user.id ? request.student_id : request.senior_id;
 
-      const { data: otherProfile } = await supabase
+      const { data: otherProfile, error: profileError } = await supabase
         .from('profiles')
         .select('full_name')
-        .eq('id', otherUserId!)
+        .eq('id', otherUserId)
         .maybeSingle();
+
+      if (profileError) {
+        console.error('Error fetching profile for user:', otherUserId, profileError);
+      }
 
       const { data: messages } = await supabase
         .from('messages')
@@ -96,10 +100,19 @@ export default function MessagesScreen() {
         .eq('receiver_id', user.id)
         .eq('read', false);
 
+      const personName = otherProfile?.full_name || 'Unknown User';
+
+      console.log('Conversation data:', {
+        requestId: request.id,
+        otherUserId,
+        otherProfile,
+        personName
+      });
+
       return {
         requestId: request.id,
         requestTitle: request.title,
-        otherPersonName: otherProfile?.full_name || 'Unknown',
+        otherPersonName: personName,
         lastMessage: messages?.[0]?.content || 'No messages yet',
         lastMessageTime: messages?.[0]?.created_at || request.created_at,
         unreadCount: count || 0,

@@ -77,11 +77,20 @@ export default function ChatScreen() {
       const otherUserId =
         (requestData as any).senior_id === user?.id ? (requestData as any).student_id : (requestData as any).senior_id;
 
-      const { data: profileData } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', otherUserId!)
+        .eq('id', otherUserId)
         .maybeSingle();
+
+      if (profileError) {
+        console.error('Error fetching profile for chat:', otherUserId, profileError);
+      }
+
+      console.log('Chat profile data:', {
+        otherUserId,
+        profileData
+      });
 
       setOtherPerson(profileData);
     }

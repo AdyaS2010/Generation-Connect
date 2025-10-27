@@ -59,15 +59,28 @@ export default function SessionsScreen() {
       (data || []).map(async (session) => {
         const otherUserId = session.senior_id === user.id ? session.student_id : session.senior_id;
 
-        const { data: otherProfile } = await supabase
+        const { data: otherProfile, error: profileError } = await supabase
           .from('profiles')
           .select('full_name')
           .eq('id', otherUserId)
           .maybeSingle();
 
+        if (profileError) {
+          console.error('Error fetching profile for session:', session.id, 'user:', otherUserId, profileError);
+        }
+
+        const personName = otherProfile?.full_name || 'Unknown User';
+
+        console.log('Session data:', {
+          sessionId: session.id,
+          otherUserId,
+          otherProfile,
+          personName
+        });
+
         return {
           ...session,
-          other_person_name: otherProfile?.full_name || 'Unknown',
+          other_person_name: personName,
         };
       })
     );
