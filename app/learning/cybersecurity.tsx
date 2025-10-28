@@ -78,6 +78,9 @@ export default function CybersecurityModule() {
   const currentLesson = lessons[currentStep];
 
   useEffect(() => {
+    fadeAnim.setValue(0);
+    slideAnim.setValue(50);
+
     Animated.parallel([
       Animated.timing(progressAnim, {
         toValue: (currentStep / (lessons.length - 1)) * 100,
@@ -96,11 +99,6 @@ export default function CybersecurityModule() {
         useNativeDriver: true,
       }),
     ]).start();
-  }, [currentStep]);
-
-  useEffect(() => {
-    fadeAnim.setValue(0);
-    slideAnim.setValue(50);
   }, [currentStep]);
 
   const handleAnswer = (answerIndex: number) => {
