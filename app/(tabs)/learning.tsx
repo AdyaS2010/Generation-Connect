@@ -174,7 +174,7 @@ function SeniorLearningView() {
               </View>
             </View>
             <Text style={styles.webinarTitle}>Smart Home Devices</Text>
-            <Text style={styles.webinarHost}>Hosted by Sarah Chen</Text>
+            <Text style={styles.webinarHost}>Hosted by Tom T.</Text>
             <Pressable style={styles.webinarButton}>
               <Text style={styles.webinarButtonText}>Register</Text>
             </Pressable>
@@ -189,7 +189,7 @@ function SeniorLearningView() {
               </View>
             </View>
             <Text style={styles.webinarTitle}>Social Media Safety</Text>
-            <Text style={styles.webinarHost}>Hosted by Mike Rodriguez</Text>
+            <Text style={styles.webinarHost}>Hosted by Jake B.</Text>
             <Pressable style={styles.webinarButton}>
               <Text style={styles.webinarButtonText}>Register</Text>
             </Pressable>
