@@ -71,6 +71,14 @@ export default function WelcomeScreen() {
         style={styles.gradientBackground}
       >
         <Animated.View style={[styles.container, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
+          <View style={styles.topConfettiContainer}>
+            <Sparkles size={24} color="#f59e0b" style={styles.topConfetti1} />
+            <Stars size={20} color="#dc2626" style={styles.topConfetti2} />
+            <Sparkles size={22} color="#fbbf24" style={styles.topConfetti3} />
+            <Stars size={26} color="#f59e0b" style={styles.topConfetti4} />
+            <Sparkles size={18} color="#dc2626" style={styles.topConfetti5} />
+          </View>
+
           <Animated.View style={[styles.impactBanner, { transform: [{ translateY: floatAnim }] }]}>
             <Sparkles size={16} color="#f59e0b" />
             <Text style={styles.impactText}>500+ connections made with care</Text>
@@ -89,12 +97,6 @@ export default function WelcomeScreen() {
                 <View style={styles.iconCircle}>
                   <GraduationCap size={48} color="#dc2626" strokeWidth={2.5} />
                 </View>
-              </View>
-              <View style={styles.confettiContainer}>
-                <Sparkles size={20} color="#f59e0b" style={styles.confetti1} />
-                <Stars size={18} color="#dc2626" style={styles.confetti2} />
-                <Sparkles size={16} color="#fbbf24" style={styles.confetti3} />
-                <Stars size={20} color="#f59e0b" style={styles.confetti4} />
               </View>
             </View>
 
@@ -189,6 +191,45 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: 60,
     alignItems: 'center',
+    position: 'relative',
+  },
+  topConfettiContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 120,
+    pointerEvents: 'none',
+  },
+  topConfetti1: {
+    position: 'absolute',
+    top: 10,
+    left: 30,
+    opacity: 0.6,
+  },
+  topConfetti2: {
+    position: 'absolute',
+    top: 20,
+    right: 40,
+    opacity: 0.7,
+  },
+  topConfetti3: {
+    position: 'absolute',
+    top: 40,
+    left: '50%',
+    opacity: 0.5,
+  },
+  topConfetti4: {
+    position: 'absolute',
+    top: 5,
+    right: 100,
+    opacity: 0.6,
+  },
+  topConfetti5: {
+    position: 'absolute',
+    top: 35,
+    left: 80,
+    opacity: 0.7,
   },
   impactBanner: {
     flexDirection: 'row',
@@ -219,44 +260,11 @@ const styles = StyleSheet.create({
   },
   illustrationContainer: {
     marginBottom: 24,
-    position: 'relative',
   },
   illustration: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 20,
-  },
-  confettiContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    pointerEvents: 'none',
-  },
-  confetti1: {
-    position: 'absolute',
-    top: -10,
-    left: 10,
-    opacity: 0.7,
-  },
-  confetti2: {
-    position: 'absolute',
-    top: 5,
-    right: 15,
-    opacity: 0.6,
-  },
-  confetti3: {
-    position: 'absolute',
-    bottom: 10,
-    left: 25,
-    opacity: 0.8,
-  },
-  confetti4: {
-    position: 'absolute',
-    bottom: 0,
-    right: 20,
-    opacity: 0.7,
   },
   iconCircle: {
     width: 80,

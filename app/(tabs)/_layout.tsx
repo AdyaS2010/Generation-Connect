@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Home, MessageSquare, Calendar, User, Users, BarChart3 } from 'lucide-react-native';
+import { Home, MessageSquare, Calendar, User, Users, BarChart3, BookOpen } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function TabLayout() {
@@ -56,6 +56,13 @@ export default function TabLayout() {
         options={{
           title: 'Sessions',
           tabBarIcon: ({ size, color }) => <Calendar size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="learning"
+        options={{
+          title: 'Learning',
+          tabBarIcon: ({ size, color }) => <BookOpen size={size} color={color} />,
         }}
       />
       <Tabs.Screen
