@@ -10,6 +10,8 @@ export default function CybersecurityModule() {
   const [score, setScore] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({});
   const progressAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
 
   const lessons = [
     {
@@ -76,11 +78,29 @@ export default function CybersecurityModule() {
   const currentLesson = lessons[currentStep];
 
   useEffect(() => {
-    Animated.timing(progressAnim, {
-      toValue: (currentStep / (lessons.length - 1)) * 100,
-      duration: 500,
-      useNativeDriver: false,
-    }).start();
+    Animated.parallel([
+      Animated.timing(progressAnim, {
+        toValue: (currentStep / (lessons.length - 1)) * 100,
+        duration: 500,
+        useNativeDriver: false,
+      }),
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 50,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [currentStep]);
+
+  useEffect(() => {
+    fadeAnim.setValue(0);
+    slideAnim.setValue(50);
   }, [currentStep]);
 
   const handleAnswer = (answerIndex: number) => {
@@ -160,18 +180,44 @@ export default function CybersecurityModule() {
       </LinearGradient>
 
       <ScrollView style={styles.content}>
-        {renderLesson()}
+        <Animated.View
+          style={{
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }],
+          }}
+        >
+          {renderLesson()}
+        </Animated.View>
       </ScrollView>
     </View>
   );
 }
 
 function IntroLesson({ lesson, onNext }: any) {
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
+
   return (
     <View style={styles.lessonContainer}>
-      <View style={styles.iconContainer}>
+      <Animated.View style={[styles.iconContainer, { transform: [{ scale: pulseAnim }] }]}>
         <Shield size={80} color="#dc2626" />
-      </View>
+      </Animated.View>
       <Text style={styles.lessonTitle}>{lesson.title}</Text>
       <Text style={styles.lessonContent}>{lesson.content}</Text>
 
@@ -381,12 +427,53 @@ function DemoLesson({ lesson, onNext }: any) {
 
 function CompleteLesson({ score, totalQuestions, onFinish }: any) {
   const percentage = Math.round((score / totalQuestions) * 100);
+  const celebrateAnim = useRef(new Animated.Value(0)).current;
+  const bounceAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(celebrateAnim, {
+        toValue: 1,
+        tension: 20,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+      Animated.sequence([
+        Animated.timing(bounceAnim, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.spring(bounceAnim, {
+          toValue: 0,
+          tension: 100,
+          friction: 5,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
+  }, []);
 
   return (
     <View style={styles.lessonContainer}>
-      <View style={styles.iconContainer}>
+      <Animated.View
+        style={[
+          styles.iconContainer,
+          {
+            transform: [
+              { scale: celebrateAnim },
+              {
+                translateY: bounceAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, -30],
+                }),
+              },
+            ],
+          },
+        ]}
+      >
         <Shield size={80} color="#10b981" />
-      </View>
+      </Animated.View>
       <Text style={styles.completeTitle}>Congratulations!</Text>
       <Text style={styles.completeSubtitle}>
         You've completed the Cybersecurity Basics module
