@@ -11,7 +11,7 @@
 
 ---
 
-## 💡 The Idea
+## The Idea 💡💡
 
 We noticed something heartbreaking: while younger generations grow up fluent in technology, our seniors often feel left behind and isolated in an increasingly digital world. At the same time, students need community service hours but struggle to find meaningful ways to give back.
 
@@ -418,7 +418,7 @@ This project wouldn't exist without:
 
 **Adya S** | **Sahana R** | **Zoya S**
 
-Three high school students who believe technology should connect generations, not divide them.
+Three high school students who believe technology should **connect** generations, not _divide_ them.
 
 ---
 
