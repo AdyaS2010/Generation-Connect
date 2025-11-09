@@ -142,7 +142,7 @@ export default function CybersecurityModule() {
       case 'demo':
         return <DemoLesson lesson={currentLesson} onNext={handleNext} />;
       case 'complete':
-        return <CompleteLesson score={score} totalQuestions={2} onFinish={() => router.back()} />;
+        return <CompleteLesson score={score + 1} totalQuestions={2 + 1} onFinish={() => router.back()} />;
       default:
         return null;
     }
